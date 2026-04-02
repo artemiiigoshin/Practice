@@ -2,15 +2,16 @@
 
 namespace Practice.Controllers.DTO
 {
-    public record EventCreateAndUpdateDto(
+    public record EventCreateAndUpdateDto
+    {
         [Required(ErrorMessage = "Title обязателен")]
-        string Title,
-        string? Description,
+        public required string Title { get; init; }
+        public string? Description { get; init; }
         [Required(ErrorMessage = "StartAt обязателен")]
-        DateTime StartAt,
+        public DateTime StartAt { get; init; }
         [Required(ErrorMessage = "EndAt обязателен")]
-        DateTime EndAt
-    );
+        public DateTime EndAt { get; init; }
+    }
 
     public record EventReadDto(
         Guid Id,

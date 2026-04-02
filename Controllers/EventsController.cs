@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.AspNetCore.Mvc;
 using Practice.Controllers.DTO;
 using Practice.Models;
 using Practice.Service;
@@ -83,8 +84,11 @@ namespace Practice.Controllers
         [HttpPut("{id:guid}")]
         public IActionResult Update(Guid id, EventCreateAndUpdateDto updateDto)
         {
-            if (updateDto.EndAt <= updateDto.StartAt)
-                return BadRequest("EndAt должен быть позже StartAt");
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            if (!EventValidator.CheckTime(updateDto, out var error))
+                return BadRequest(error);
 
             var updatedEvent = new Event
             {
