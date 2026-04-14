@@ -18,9 +18,12 @@ namespace Practice.Controllers
         }
 
         [HttpGet]
-        public ActionResult<IEnumerable<EventReadDto>> GetAll()
+        public ActionResult<IEnumerable<EventReadDto>> GetAll(
+            string? title,
+            DateTime? from,
+            DateTime? to)
         {
-            var events = _eventService.GetAll();
+            var events = _eventService.GetAll(title, from, to);
 
             var dtos = events.Select(evt => new EventReadDto(
                 evt.Id,

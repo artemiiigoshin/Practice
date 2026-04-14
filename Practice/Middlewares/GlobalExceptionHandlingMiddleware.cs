@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
@@ -52,8 +53,9 @@ namespace Practice.Middlewares
 
             var problemDetails = new ProblemDetails
             {
-                Status = statusCode,
+                Type = $"https://httpstatuses.com/{statusCode}",
                 Title = "An error occurred while processing your request.",
+                Status = statusCode,
                 Detail = exception.Message,
                 Instance = context.Request.Path
             };
@@ -64,11 +66,10 @@ namespace Practice.Middlewares
         private static int MapStatusCode(Exception exception)
             => exception switch
             {
+                ValidationException => StatusCodes.Status400BadRequest,
                 ArgumentException => StatusCodes.Status400BadRequest,
                 InvalidOperationException => StatusCodes.Status400BadRequest,
-
                 KeyNotFoundException => StatusCodes.Status404NotFound,
-
                 _ => StatusCodes.Status500InternalServerError
             };
     }
