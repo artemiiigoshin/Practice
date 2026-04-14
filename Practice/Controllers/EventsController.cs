@@ -18,19 +18,32 @@ namespace Practice.Controllers
         }
 
         [HttpGet]
-        public ActionResult<IEnumerable<EventReadDto>> GetAll()
+        public ActionResult<PaginatedResult<EventReadDto>> GetAll([FromQuery] EventQueryParameters query)
         {
-            var events = _eventService.GetAll();
+            if (query.Page < 1)
+                return BadRequest("Page < 1.");
 
-            var dtos = events.Select(evt => new EventReadDto(
-                evt.Id,
-                evt.Title,
-                evt.Description,
-                evt.StartAt,
-                evt.EndAt
-            ));
+            if (query.PageSize < 1)
+                return BadRequest("PageSize < 1.");
 
-            return Ok(dtos);
+            var result = _eventService.GetAll(query);
+
+            var response = new PaginatedResult<EventReadDto>
+            {
+                TotalCount = result.TotalCount,
+                Page = result.Page,
+                PageSize = result.PageSize,
+                ItemsCount = result.ItemsCount,
+                Items = result.Items.Select(e => new EventReadDto(
+                    e.Id,
+                    e.Title,
+                    e.Description,
+                    e.StartAt,
+                    e.EndAt
+                )).ToList()
+            };
+
+            return Ok(response);
         }
 
         [HttpGet("{id:guid}")]
