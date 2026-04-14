@@ -1,4 +1,5 @@
-﻿using Practice.Models;
+﻿using Practice.Controllers.DTO;
+using Practice.Models;
 
 namespace Practice.Service
 {
@@ -6,27 +7,41 @@ namespace Practice.Service
     {
         private readonly List<Event> _events = new();
 
-        public IEnumerable<Event> GetAll(string? title, DateTime? from, DateTime? to)
+        public PaginatedResult<Event> GetAll(EventQueryParameters query)
         {
-            var query = _events.AsQueryable();
+            var eventsQuery = _events.AsQueryable();
 
-            if (!string.IsNullOrWhiteSpace(title))
+            if (!string.IsNullOrWhiteSpace(query.Title))
             {
-                query = query.Where(e =>
-                    e.Title.Contains(title, StringComparison.OrdinalIgnoreCase));
+                eventsQuery = eventsQuery.Where(e =>
+                    e.Title.Contains(query.Title, StringComparison.OrdinalIgnoreCase));
             }
 
-            if (from.HasValue)
+            if (query.From.HasValue)
             {
-                query = query.Where(e => e.StartAt >= from.Value);
+                eventsQuery = eventsQuery.Where(e => e.StartAt >= query.From.Value);
             }
 
-            if (to.HasValue)
+            if (query.To.HasValue)
             {
-                query = query.Where(e => e.EndAt <= to.Value);
+                eventsQuery = eventsQuery.Where(e => e.EndAt <= query.To.Value);
             }
 
-            return query.ToList();
+            var totalCount = eventsQuery.Count();
+
+            var items = eventsQuery
+                .Skip((query.Page - 1) * query.PageSize)
+                .Take(query.PageSize)
+                .ToList();
+
+            return new PaginatedResult<Event>
+            {
+                TotalCount = totalCount,
+                Page = query.Page,
+                PageSize = query.PageSize,
+                ItemsCount = items.Count,
+                Items = items
+            };
         }
 
         public Event? GetById(Guid id) => _events.FirstOrDefault(e => e.Id == id);
