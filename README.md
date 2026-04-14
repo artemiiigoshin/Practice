@@ -1,6 +1,8 @@
 ﻿# Event API
 
-Простой сервис для управления мероприятиями на ASP.NET Core Web API.  
+Простой сервис для управления мероприятиями на ASP.NET Core Web API.
+
+Решение содержит тестовый проект - Tests (Тесты контроллера и валидации)
 
 Реализованные endpoint:
 1)Получить список всех событий
@@ -10,17 +12,22 @@
 5)Удалить событие
 
 
+
+Для получения всех событий реализованы фильтры по имени и датам, а также постраничный вывод.
+
+
+
 # Запуск проекта
 
-1) Клонируйте репозиторий:
+1. Клонируйте репозиторий:
 git clone https://github.com/artemiiigoshin/Practice.git
 cd <папка проекта>
+2. Запустите проект: dotnet run
 
-2) Запустите проект: dotnet run
-
-#Swagger
+\#Swagger
 Откройте Swagger UI:
 https://localhost:<порт из launchSettings.json>
 или
 http://localhost:<порт из launchSettings.json>
 Swagger доступе в Development и Stage
+
