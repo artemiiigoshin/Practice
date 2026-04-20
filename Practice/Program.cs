@@ -1,3 +1,4 @@
+using Practice.Middlewares;
 using Practice.Service;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -14,6 +15,8 @@ builder.Services.AddSwaggerGen(c =>
 });
 
 var app = builder.Build();
+
+app.UseMiddleware<GlobalExceptionHandlingMiddleware>();
 
 if (app.Environment.IsDevelopment() || app.Environment.IsStaging())
 {

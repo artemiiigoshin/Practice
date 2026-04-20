@@ -1,4 +1,5 @@
-﻿using Practice.Models;
+﻿using Practice.Controllers.DTO;
+using Practice.Models;
 
 namespace Practice.Service
 {
@@ -6,7 +7,42 @@ namespace Practice.Service
     {
         private readonly List<Event> _events = new();
 
-        public IEnumerable<Event> GetAll() => _events;
+        public PaginatedResult<Event> GetAll(EventQueryParameters query)
+        {
+            var eventsQuery = _events.AsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(query.Title))
+            {
+                eventsQuery = eventsQuery.Where(e =>
+                    e.Title.Contains(query.Title, StringComparison.OrdinalIgnoreCase));
+            }
+
+            if (query.From.HasValue)
+            {
+                eventsQuery = eventsQuery.Where(e => e.StartAt >= query.From.Value);
+            }
+
+            if (query.To.HasValue)
+            {
+                eventsQuery = eventsQuery.Where(e => e.EndAt <= query.To.Value);
+            }
+
+            var totalCount = eventsQuery.Count();
+
+            var items = eventsQuery
+                .Skip((query.Page - 1) * query.PageSize)
+                .Take(query.PageSize)
+                .ToList();
+
+            return new PaginatedResult<Event>
+            {
+                TotalCount = totalCount,
+                Page = query.Page,
+                PageSize = query.PageSize,
+                ItemsCount = items.Count,
+                Items = items
+            };
+        }
 
         public Event? GetById(Guid id) => _events.FirstOrDefault(e => e.Id == id);
 
