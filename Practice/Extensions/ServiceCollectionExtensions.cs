@@ -9,6 +9,8 @@ namespace Practice.Extensions
             services.AddSingleton<IEventService, EventService>();
             services.AddSingleton<IBookingService, BookingService>();
 
+            services.AddHostedService<BookingProcessingBackgroundService>();
+
             return services;
         }
     }

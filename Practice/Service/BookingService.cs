@@ -27,5 +27,30 @@ namespace Practice.Service
             var booking = _bookings.FirstOrDefault(x => x.Id == bookingId);
             return Task.FromResult(booking);
         }
+
+        public Task<List<Booking>> GetPendingBookingsAsync()
+        {
+            var pendingBookings = _bookings
+                .Where(x => x.Status == BookingStatus.Pending)
+                .ToList();
+
+            return Task.FromResult(pendingBookings);
+        }
+
+        public Task UpdateBookingAsync(Booking booking)
+        {
+            var existingBooking = _bookings.FirstOrDefault(x => x.Id == booking.Id);
+            if (existingBooking is null)
+            {
+                return Task.CompletedTask;
+            }
+
+            existingBooking.EventId = booking.EventId;
+            existingBooking.Status = booking.Status;
+            existingBooking.CreatedAt = booking.CreatedAt;
+            existingBooking.ProcessedAt = booking.ProcessedAt;
+
+            return Task.CompletedTask;
+        }
     }
 }
