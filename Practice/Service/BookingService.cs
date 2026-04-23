@@ -6,8 +6,19 @@ namespace Practice.Service
     {
         private readonly List<Booking> _bookings = new();
 
+        private readonly IEventService _eventService;
+
+        public BookingService(IEventService eventService)
+        {
+            _eventService = eventService;
+        }
+
         public Task<Booking> CreateBookingAsync(Guid eventId)
         {
+            var evt = _eventService.GetById(eventId);
+            if (evt is null)
+                throw new InvalidOperationException("Event not found");
+
             var booking = new Booking
             {
                 Id = Guid.NewGuid(),
