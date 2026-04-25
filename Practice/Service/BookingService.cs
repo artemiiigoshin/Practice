@@ -63,5 +63,23 @@ namespace Practice.Service
 
             return Task.CompletedTask;
         }
+
+        public async Task ProcessBookingAsync(Booking booking, CancellationToken cancellationToken)
+        {
+            try
+            {
+                await Task.Delay(2000, cancellationToken);
+
+                booking.Status = BookingStatus.Confirmed;
+            }
+            catch
+            {
+                booking.Status = BookingStatus.Rejected;
+            }
+
+            booking.ProcessedAt = DateTime.UtcNow;
+
+            await UpdateBookingAsync(booking);
+        }
     }
 }

@@ -131,5 +131,20 @@ namespace Tests
 
             Assert.Null(result);
         }
+
+        [Fact]
+        public async Task ProcessBooking_Cancelled_RejectedStatus()
+        {
+            var evt = CreateEvent();
+            var booking = await _bookingService.CreateBookingAsync(evt.Id);
+
+            using var cancellationTokenSource = new CancellationTokenSource();
+            cancellationTokenSource.Cancel();
+
+            await _bookingService.ProcessBookingAsync(booking, cancellationTokenSource.Token);
+
+            Assert.Equal(BookingStatus.Rejected, booking.Status);
+            Assert.NotNull(booking.ProcessedAt);
+        }
     }
 }

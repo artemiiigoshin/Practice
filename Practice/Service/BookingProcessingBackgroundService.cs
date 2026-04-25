@@ -27,12 +27,7 @@ namespace Practice.Service
                         continue;
                     }
 
-                    await Task.Delay(2000, stoppingToken);
-
-                    booking.Status = BookingStatus.Confirmed;
-                    booking.ProcessedAt = DateTime.UtcNow;
-
-                    await bookingService.UpdateBookingAsync(booking);
+                    await bookingService.ProcessBookingAsync(booking, stoppingToken);
                 }
 
                 await Task.Delay(1000, stoppingToken);

@@ -8,5 +8,6 @@ namespace Practice.Service
         Task<Booking?> GetBookingByIdAsync(Guid bookingId);
         Task<List<Booking>> GetPendingBookingsAsync();
         Task UpdateBookingAsync(Booking booking);
+        Task ProcessBookingAsync(Booking booking, CancellationToken cancellationToken);
     }
 }
