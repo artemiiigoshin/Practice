@@ -6,11 +6,17 @@ namespace Practice.Controllers.DTO
     {
         [Required(ErrorMessage = "Title обязателен")]
         public required string Title { get; init; }
+
         public string? Description { get; init; }
+
         [Required(ErrorMessage = "StartAt обязателен")]
         public DateTime StartAt { get; init; }
+
         [Required(ErrorMessage = "EndAt обязателен")]
         public DateTime EndAt { get; init; }
+
+        [Range(1, int.MaxValue, ErrorMessage = "TotalSeats должен быть больше нуля")]
+        public int TotalSeats { get; init; }
     }
 
     public record EventReadDto(
@@ -18,6 +24,8 @@ namespace Practice.Controllers.DTO
         string Title,
         string? Description,
         DateTime StartAt,
-        DateTime EndAt
+        DateTime EndAt,
+        int TotalSeats,
+        int AvailableSeats
     );
 }

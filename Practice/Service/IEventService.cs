@@ -10,5 +10,7 @@ namespace Practice.Service
         Event Create(Event newEvent);
         bool Update(Event updatedEvent);
         bool Delete(Guid id);
+        bool TryReserveSeats(Guid eventId, int count = 1);
+        bool ReleaseSeats(Guid eventId, int count = 1);
     }
 }
