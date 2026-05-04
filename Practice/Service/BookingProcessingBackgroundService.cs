@@ -5,6 +5,7 @@ namespace Practice.Service
     public class BookingProcessingBackgroundService : BackgroundService
     {
         private readonly IServiceProvider _serviceProvider;
+        private readonly SemaphoreSlim _processSemaphore = new(1, 1);
 
         public BookingProcessingBackgroundService(IServiceProvider serviceProvider)
         {
@@ -20,17 +21,39 @@ namespace Practice.Service
 
                 var pendingBookings = await bookingService.GetPendingBookingsAsync();
 
-                foreach (var booking in pendingBookings)
-                {
-                    if (booking.ProcessedAt is not null)
-                    {
-                        continue;
-                    }
+                var tasks = pendingBookings
+                    .Where(booking => booking.ProcessedAt is null)
+                    .Select(booking => ProcessBookingAsync(booking, bookingService, stoppingToken));
 
-                    await bookingService.ProcessBookingAsync(booking, stoppingToken);
-                }
+                await Task.WhenAll(tasks);
 
                 await Task.Delay(1000, stoppingToken);
+            }
+        }
+
+        private async Task ProcessBookingAsync(
+            Booking booking,
+            IBookingService bookingService,
+            CancellationToken stoppingToken)
+        {
+            try
+            {
+                await Task.Delay(2000, stoppingToken);
+
+                await _processSemaphore.WaitAsync(stoppingToken);
+
+                try
+                {
+                    await bookingService.ProcessBookingAsync(booking, stoppingToken);
+                }
+                finally
+                {
+                    _processSemaphore.Release();
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
             }
         }
     }
