@@ -1,3 +1,4 @@
+using Practice.Extensions;
 using Practice.Middlewares;
 using Practice.Service;
 
@@ -7,11 +8,11 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
 
-builder.Services.AddSingleton<IEventService, EventService>();
+builder.Services.AddApplicationServices();
 
 builder.Services.AddSwaggerGen(c =>
 {
-    c.SwaggerDoc("v1", new() { Title = "Event API", Version = "sprint-1" });
+    c.SwaggerDoc("v3", new() { Title = "Event API", Version = "sprint-3" });
 });
 
 var app = builder.Build();
@@ -23,7 +24,7 @@ if (app.Environment.IsDevelopment() || app.Environment.IsStaging())
     app.UseSwagger();
     app.UseSwaggerUI(c =>
     {
-        c.SwaggerEndpoint("/swagger/v1/swagger.json", "Event API V1");
+        c.SwaggerEndpoint("/swagger/v3/swagger.json", "Event API V3");
         c.RoutePrefix = string.Empty;
     });
 }
