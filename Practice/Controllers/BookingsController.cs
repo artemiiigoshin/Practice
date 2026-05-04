@@ -24,7 +24,15 @@ namespace Practice.Controllers
             if (evt == null)
                 return NotFound();
 
-            var booking = _bookingService.CreateBookingAsync(id).Result;
+            Booking booking;
+            try
+            {
+                booking = _bookingService.CreateBookingAsync(id).Result;
+            }
+            catch (NoAvailableSeatsException ex)
+            {
+                return Conflict(ex.Message);
+            }
 
             var dto = new BookingReadDto(
                 booking.Id,
