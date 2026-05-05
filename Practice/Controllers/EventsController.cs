@@ -39,7 +39,9 @@ namespace Practice.Controllers
                     e.Title,
                     e.Description,
                     e.StartAt,
-                    e.EndAt
+                    e.EndAt,
+                    e.TotalSeats,
+                    e.AvailableSeats
                 )).ToList()
             };
 
@@ -57,7 +59,9 @@ namespace Practice.Controllers
                 evt.Title,
                 evt.Description,
                 evt.StartAt,
-                evt.EndAt
+                evt.EndAt,
+                evt.TotalSeats,
+                evt.AvailableSeats
             );
 
             return Ok(dto);
@@ -77,7 +81,9 @@ namespace Practice.Controllers
                 Title = CreateDto.Title,
                 Description = CreateDto.Description,
                 StartAt = CreateDto.StartAt,
-                EndAt = CreateDto.EndAt
+                EndAt = CreateDto.EndAt,
+                TotalSeats = CreateDto.TotalSeats,
+                AvailableSeats = CreateDto.TotalSeats
             };
 
             var createdEvent = _eventService.Create(newEvent);
@@ -88,7 +94,9 @@ namespace Practice.Controllers
                 createdEvent.Title,
                 createdEvent.Description,
                 createdEvent.StartAt,
-                createdEvent.EndAt
+                createdEvent.EndAt,
+                createdEvent.TotalSeats,
+                createdEvent.AvailableSeats
             );
 
             return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
@@ -109,7 +117,8 @@ namespace Practice.Controllers
                 Title = updateDto.Title,
                 Description = updateDto.Description,
                 StartAt = updateDto.StartAt,
-                EndAt = updateDto.EndAt
+                EndAt = updateDto.EndAt,
+                TotalSeats = updateDto.TotalSeats
             };
 
             var result = _eventService.Update(updatedEvent);

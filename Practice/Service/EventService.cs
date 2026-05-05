@@ -62,6 +62,7 @@ namespace Practice.Service
             existing.Description = updatedEvent.Description;
             existing.StartAt = updatedEvent.StartAt;
             existing.EndAt = updatedEvent.EndAt;
+            existing.TotalSeats = updatedEvent.TotalSeats;
             return true;
         }
 
@@ -71,6 +72,39 @@ namespace Practice.Service
             if (existing == null) return false;
 
             _events.Remove(existing);
+            return true;
+        }
+
+        public bool TryReserveSeats(Guid eventId, int count = 1)
+        {
+            var existing = GetById(eventId);
+            if (existing == null)
+                return false;
+
+            if (count <= 0)
+                throw new ArgumentException("Количество мест должно быть больше нуля.");
+
+            if (existing.AvailableSeats < count)
+                return false;
+
+            existing.AvailableSeats -= count;
+            return true;
+        }
+
+        public bool ReleaseSeats(Guid eventId, int count = 1)
+        {
+            var existing = GetById(eventId);
+            if (existing == null)
+                return false;
+
+            if (count <= 0)
+                throw new ArgumentException("Количество мест должно быть больше нуля.");
+
+            existing.AvailableSeats += count;
+
+            if (existing.AvailableSeats > existing.TotalSeats)
+                throw new InvalidOperationException("AvailableSeats не может быть больше TotalSeats.");
+
             return true;
         }
     }

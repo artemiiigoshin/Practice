@@ -8,6 +8,8 @@ namespace Practice.Service
 
         private readonly IEventService _eventService;
 
+        private readonly object _bookingLock = new();
+
         public BookingService(IEventService eventService)
         {
             _eventService = eventService;
@@ -15,22 +17,30 @@ namespace Practice.Service
 
         public Task<Booking> CreateBookingAsync(Guid eventId)
         {
-            var evt = _eventService.GetById(eventId);
-            if (evt is null)
-                throw new InvalidOperationException("Event not found");
-
-            var booking = new Booking
+            lock (_bookingLock)
             {
-                Id = Guid.NewGuid(),
-                EventId = eventId,
-                Status = BookingStatus.Pending,
-                CreatedAt = DateTime.UtcNow,
-                ProcessedAt = null
-            };
+                var evt = _eventService.GetById(eventId);
+                if (evt is null)
+                    throw new InvalidOperationException("Event not found");
 
-            _bookings.Add(booking);
+                var reserved = _eventService.TryReserveSeats(eventId);
 
-            return Task.FromResult(booking);
+                if (!reserved)
+                    throw new NoAvailableSeatsException();
+
+                var booking = new Booking
+                {
+                    Id = Guid.NewGuid(),
+                    EventId = eventId,
+                    Status = BookingStatus.Pending,
+                    CreatedAt = DateTime.UtcNow,
+                    ProcessedAt = null
+                };
+
+                _bookings.Add(booking);
+
+                return Task.FromResult(booking);
+            }
         }
 
         public Task<Booking?> GetBookingByIdAsync(Guid bookingId)
@@ -66,17 +76,7 @@ namespace Practice.Service
 
         public async Task ProcessBookingAsync(Booking booking, CancellationToken cancellationToken)
         {
-            try
-            {
-                await Task.Delay(2000, cancellationToken);
-
-                booking.Status = BookingStatus.Confirmed;
-            }
-            catch
-            {
-                booking.Status = BookingStatus.Rejected;
-            }
-
+            booking.Status = BookingStatus.Confirmed;
             booking.ProcessedAt = DateTime.UtcNow;
 
             await UpdateBookingAsync(booking);
