@@ -5,11 +5,15 @@ namespace Practice.Service
     public class BookingProcessingBackgroundService : BackgroundService
     {
         private readonly IServiceProvider _serviceProvider;
+        private readonly ILogger<BookingProcessingBackgroundService> _logger;
         private readonly SemaphoreSlim _processSemaphore = new(1, 1);
 
-        public BookingProcessingBackgroundService(IServiceProvider serviceProvider)
+        public BookingProcessingBackgroundService(
+            IServiceProvider serviceProvider,
+            ILogger<BookingProcessingBackgroundService> logger)
         {
             _serviceProvider = serviceProvider;
+            _logger = logger;
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -17,13 +21,14 @@ namespace Practice.Service
             while (!stoppingToken.IsCancellationRequested)
             {
                 using var scope = _serviceProvider.CreateScope();
+                var eventService = scope.ServiceProvider.GetRequiredService<IEventService>();
                 var bookingService = scope.ServiceProvider.GetRequiredService<IBookingService>();
 
                 var pendingBookings = await bookingService.GetPendingBookingsAsync();
 
                 var tasks = pendingBookings
                     .Where(booking => booking.ProcessedAt is null)
-                    .Select(booking => ProcessBookingAsync(booking, bookingService, stoppingToken));
+                    .Select(booking => ProcessBookingAsync(booking, bookingService, eventService, stoppingToken));
 
                 await Task.WhenAll(tasks);
 
@@ -34,6 +39,7 @@ namespace Practice.Service
         private async Task ProcessBookingAsync(
             Booking booking,
             IBookingService bookingService,
+            IEventService eventService,
             CancellationToken stoppingToken)
         {
             try
@@ -44,7 +50,23 @@ namespace Practice.Service
 
                 try
                 {
-                    await bookingService.ProcessBookingAsync(booking, stoppingToken);
+                    var evt = eventService.GetById(booking.EventId);
+
+                    if (evt is null)
+                    {
+                        booking.Reject();
+                        await bookingService.UpdateBookingAsync(booking);
+
+                        _logger.LogWarning(
+                            "Booking {BookingId} rejected because event {EventId} was not found.",
+                            booking.Id,
+                            booking.EventId);
+
+                        return;
+                    }
+
+                    booking.Confirm();
+                    await bookingService.UpdateBookingAsync(booking);
                 }
                 finally
                 {
@@ -54,6 +76,25 @@ namespace Practice.Service
             catch (OperationCanceledException)
             {
                 throw;
+            }
+            catch (Exception ex)
+            {
+                var evt = eventService.GetById(booking.EventId);
+
+                booking.Reject();
+
+                if (evt is not null)
+                {
+                    eventService.ReleaseSeats(evt.Id);
+                    eventService.Update(evt);
+                }
+
+                await bookingService.UpdateBookingAsync(booking);
+
+                _logger.LogError(
+                    ex,
+                    "Unexpected error while processing booking {BookingId}. Booking was rejected.",
+                    booking.Id);
             }
         }
     }

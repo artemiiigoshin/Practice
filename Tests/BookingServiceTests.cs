@@ -75,19 +75,15 @@ namespace Tests
         }
 
         [Fact]
-        public async Task Get_ReturnsStatusConfirm()
+        public async Task Reject_SetsStatusRejected()
         {
             var evt = CreateEvent();
             var booking = await _bookingService.CreateBookingAsync(evt.Id);
 
-            booking.Status = BookingStatus.Confirmed;
-            booking.ProcessedAt = DateTime.UtcNow;
+            booking.Reject();
 
-            var result = await _bookingService.GetBookingByIdAsync(booking.Id);
-
-            Assert.NotNull(result);
-            Assert.Equal(BookingStatus.Confirmed, result!.Status);
-            Assert.NotNull(result.ProcessedAt);
+            Assert.Equal(BookingStatus.Rejected, booking.Status);
+            Assert.NotNull(booking.ProcessedAt);
         }
 
         [Fact]
