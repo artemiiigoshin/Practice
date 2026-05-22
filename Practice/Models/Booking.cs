@@ -2,6 +2,11 @@
 {
     public class Booking
     {
+        private Booking()
+        {
+            Event = null!;
+        }
+
         public Guid Id { get; set; }
 
         public Guid EventId { get; set; }
@@ -23,6 +28,8 @@
             Status = BookingStatus.Rejected;
             ProcessedAt = DateTime.UtcNow;
         }
+
+        public Event Event { get; set; } = null!;
     }
 }
 

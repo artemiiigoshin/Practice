@@ -4,6 +4,11 @@ namespace Practice.Models
 {
     public class Event
     {
+        private Event()
+        {
+            Title = null!;
+        }
+
         public Guid Id { get; set; }
         public string Title { get; set; }
         public string? Description { get; set; }
@@ -11,5 +16,7 @@ namespace Practice.Models
         public DateTime EndAt { get; set; }
         public int TotalSeats { get; set; }
         public int AvailableSeats { get; set; }
+
+        public ICollection<Booking> Bookings { get; set; } = new List<Booking>();
     }
 }
