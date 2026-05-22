@@ -6,8 +6,8 @@ namespace Practice.Extensions
     {
         public static IServiceCollection AddApplicationServices(this IServiceCollection services)
         {
-            services.AddSingleton<IEventService, EventService>();
-            services.AddSingleton<IBookingService, BookingService>();
+            services.AddScoped<IEventService, EventService>();
+            services.AddScoped<IBookingService, BookingService>();
 
             services.AddHostedService<BookingProcessingBackgroundService>();
 

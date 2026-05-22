@@ -1,69 +1,69 @@
-﻿using Practice.Models;
+﻿using Microsoft.EntityFrameworkCore;
+using Practice.DataAccess;
+using Practice.Models;
 
 namespace Practice.Service
 {
-    public class BookingService : IBookingService
+    public class BookingService(AppDbContext context, IEventService eventService) : IBookingService
     {
-        private readonly List<Booking> _bookings = new();
+        private readonly AppDbContext _context = context;
 
-        private readonly IEventService _eventService;
+        private static readonly SemaphoreSlim BookingSemaphore = new(1, 1);
 
-        private readonly object _bookingLock = new();
-
-        public BookingService(IEventService eventService)
+        public async Task<Booking> CreateBookingAsync(Guid eventId)
         {
-            _eventService = eventService;
-        }
+            await BookingSemaphore.WaitAsync();
 
-        public Task<Booking> CreateBookingAsync(Guid eventId)
-        {
-            lock (_bookingLock)
+            try
             {
-                var evt = _eventService.GetById(eventId);
+                var evt = await _context.Events.FirstOrDefaultAsync(e => e.Id == eventId);
                 if (evt is null)
                     throw new InvalidOperationException("Event not found");
 
-                var reserved = _eventService.TryReserveSeats(eventId);
+                var reserved = EventSeatManager.TryReserveSeats(evt);
 
                 if (!reserved)
                     throw new NoAvailableSeatsException();
 
                 var booking = new Booking
-                {
-                    Id = Guid.NewGuid(),
-                    EventId = eventId,
-                    Status = BookingStatus.Pending,
-                    CreatedAt = DateTime.UtcNow,
-                    ProcessedAt = null
-                };
+                (
+                    Guid.NewGuid(),
+                    eventId,
+                    BookingStatus.Pending,
+                    DateTime.UtcNow,
+                    null
+                );
 
-                _bookings.Add(booking);
+                _context.Bookings.Add(booking);
 
-                return Task.FromResult(booking);
+                await _context.SaveChangesAsync();
+
+                return booking;
+            }
+            finally
+            {
+                BookingSemaphore.Release();
             }
         }
 
         public Task<Booking?> GetBookingByIdAsync(Guid bookingId)
         {
-            var booking = _bookings.FirstOrDefault(x => x.Id == bookingId);
-            return Task.FromResult(booking);
+            return _context.Bookings.FirstOrDefaultAsync(x => x.Id == bookingId);
         }
 
         public Task<List<Booking>> GetPendingBookingsAsync()
         {
-            var pendingBookings = _bookings
+            return _context.Bookings
                 .Where(x => x.Status == BookingStatus.Pending)
-                .ToList();
-
-            return Task.FromResult(pendingBookings);
+                .ToListAsync();
         }
 
-        public Task UpdateBookingAsync(Booking booking)
+        public async Task UpdateBookingAsync(Booking booking)
         {
-            var existingBooking = _bookings.FirstOrDefault(x => x.Id == booking.Id);
+            var existingBooking = await _context.Bookings.FirstOrDefaultAsync(x => x.Id == booking.Id);
             if (existingBooking is null)
             {
-                return Task.CompletedTask;
+                return;
             }
 
             existingBooking.EventId = booking.EventId;
@@ -71,7 +71,7 @@ namespace Practice.Service
             existingBooking.CreatedAt = booking.CreatedAt;
             existingBooking.ProcessedAt = booking.ProcessedAt;
 
-            return Task.CompletedTask;
+            await _context.SaveChangesAsync();
         }
 
         public async Task ProcessBookingAsync(Booking booking, CancellationToken cancellationToken)

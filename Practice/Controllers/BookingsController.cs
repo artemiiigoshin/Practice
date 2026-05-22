@@ -20,7 +20,7 @@ namespace Practice.Controllers
         [HttpPost("events/{id:guid}/book")]
         public ActionResult<BookingReadDto> CreateBooking(Guid id)
         {
-            var evt = _eventService.GetById(id);
+            var evt = _eventService.GetByIdAsync(id);
             if (evt == null)
                 return NotFound();
 

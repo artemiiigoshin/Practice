@@ -4,7 +4,7 @@ namespace Practice.Models
 {
     public static class EventValidator
     {
-        public static bool CheckTime(EventCreateAndUpdateDto info, out string? errorMessage)
+        public static bool CheckTime(EventRequestDto info, out string? errorMessage)
         {
             if (info.EndAt <= info.StartAt)
             {

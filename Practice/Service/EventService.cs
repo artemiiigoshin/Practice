@@ -1,15 +1,17 @@
-﻿using Practice.Controllers.DTO;
+﻿using Microsoft.EntityFrameworkCore;
+using Practice.Controllers.DTO;
+using Practice.DataAccess;
 using Practice.Models;
 
 namespace Practice.Service
 {
-    public class EventService : IEventService
+    public class EventService(AppDbContext context) : IEventService
     {
-        private readonly List<Event> _events = new();
+        private readonly AppDbContext _context = context;
 
-        public PaginatedResult<Event> GetAll(EventQueryParameters query)
+        public async Task<PaginatedResult<Event>> GetAllAsync(EventQueryParameters query)
         {
-            var eventsQuery = _events.AsQueryable();
+            var eventsQuery = _context.Events.AsQueryable();
 
             if (!string.IsNullOrWhiteSpace(query.Title))
             {
@@ -27,12 +29,12 @@ namespace Practice.Service
                 eventsQuery = eventsQuery.Where(e => e.EndAt <= query.To.Value);
             }
 
-            var totalCount = eventsQuery.Count();
+            var totalCount = await eventsQuery.CountAsync();
 
-            var items = eventsQuery
+            var items = await eventsQuery
                 .Skip((query.Page - 1) * query.PageSize)
                 .Take(query.PageSize)
-                .ToList();
+                .ToListAsync();
 
             return new PaginatedResult<Event>
             {
@@ -44,18 +46,32 @@ namespace Practice.Service
             };
         }
 
-        public Event? GetById(Guid id) => _events.FirstOrDefault(e => e.Id == id);
+        public Task<Event?> GetByIdAsync(Guid id) => _context.Events.FirstOrDefaultAsync(e => e.Id == id);
 
-        public Event Create(Event newEvent)
+        public async Task<Event> CreateAsync(EventCreateDto evt)
         {
-            newEvent.Id = Guid.NewGuid();
-            _events.Add(newEvent);
+            var newEvent = new Event
+                (
+                Guid.NewGuid(),
+                evt.Title,
+                evt.Description,
+                evt.StartAt,
+                evt.EndAt,
+                evt.TotalSeats,
+                evt.AvailableSeats
+                );
+
+            _context.Add(newEvent);
+
+            await _context.SaveChangesAsync();
+
             return newEvent;
+
         }
 
-        public bool Update(Event updatedEvent)
+        public async Task<bool> UpdateAsync(EventUpdateDto updatedEvent)
         {
-            var existing = GetById(updatedEvent.Id);
+            var existing = await GetByIdAsync(updatedEvent.Id);
             if (existing == null) return false;
 
             existing.Title = updatedEvent.Title;
@@ -63,49 +79,57 @@ namespace Practice.Service
             existing.StartAt = updatedEvent.StartAt;
             existing.EndAt = updatedEvent.EndAt;
             existing.TotalSeats = updatedEvent.TotalSeats;
+
+            await _context.SaveChangesAsync();
+
             return true;
         }
-
-        public bool Delete(Guid id)
+        public async Task<bool> DeleteAsync(Guid id)
         {
-            var existing = GetById(id);
+            var existing = await GetByIdAsync(id);
             if (existing == null) return false;
 
-            _events.Remove(existing);
-            return true;
-        }
+            _context.Remove(existing);
 
-        public bool TryReserveSeats(Guid eventId, int count = 1)
-        {
-            var existing = GetById(eventId);
-            if (existing == null)
-                return false;
-
-            if (count <= 0)
-                throw new ArgumentException("Количество мест должно быть больше нуля.");
-
-            if (existing.AvailableSeats < count)
-                return false;
-
-            existing.AvailableSeats -= count;
-            return true;
-        }
-
-        public bool ReleaseSeats(Guid eventId, int count = 1)
-        {
-            var existing = GetById(eventId);
-            if (existing == null)
-                return false;
-
-            if (count <= 0)
-                throw new ArgumentException("Количество мест должно быть больше нуля.");
-
-            existing.AvailableSeats += count;
-
-            if (existing.AvailableSeats > existing.TotalSeats)
-                throw new InvalidOperationException("AvailableSeats не может быть больше TotalSeats.");
+            await _context.SaveChangesAsync();
 
             return true;
         }
+
+        //Пока нет необходимости в использовании, перенесены в EventSeatManager
+        //public bool TryReserveSeats(Guid eventId, int count = 1)
+        //{
+        //    var existing = GetById(eventId);
+        //    if (existing == null)
+        //        return false;
+       
+        //    if (count <= 0)
+        //        throw new ArgumentException("Количество мест должно быть больше нуля.");
+
+        //    if (existing.AvailableSeats < count)
+        //        return false;
+
+        //    existing.AvailableSeats -= count;
+        //    return true;
+        //}
+
+        //public async Task<bool> ReleaseSeatsAsync(Guid eventId, int count = 1)
+        //{
+        //    var existing = await GetByIdAsync(eventId);
+        //    if (existing == null)
+        //        return false;
+
+        //    if (count <= 0)
+        //        throw new ArgumentException("Количество мест должно быть больше нуля.");
+
+        //    existing.AvailableSeats += count;
+
+        //    if (existing.AvailableSeats > existing.TotalSeats)
+        //        throw new InvalidOperationException("AvailableSeats не может быть больше TotalSeats.");
+
+        //    await _context.SaveChangesAsync();
+
+        //    return true;
+        //}
     }
 }

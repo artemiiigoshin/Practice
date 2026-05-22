@@ -5,12 +5,14 @@ namespace Practice.Service
 {
     public interface IEventService
     {
-        PaginatedResult<Event> GetAll(EventQueryParameters query);
-        Event? GetById(Guid id);
-        Event Create(Event newEvent);
-        bool Update(Event updatedEvent);
-        bool Delete(Guid id);
-        bool TryReserveSeats(Guid eventId, int count = 1);
-        bool ReleaseSeats(Guid eventId, int count = 1);
+        Task<PaginatedResult<Event>> GetAllAsync(EventQueryParameters query);
+        Task<Event?> GetByIdAsync(Guid id);
+        Task<Event> CreateAsync(EventCreateDto newEvent);
+        Task<bool> UpdateAsync(EventUpdateDto updatedEvent);
+        Task<bool> DeleteAsync(Guid id);
+
+        //До востребования 
+        //Task<bool> TryReserveSeatsAsync(Guid eventId, int count = 1);
+        //Task<bool> ReleaseSeatsAsync(Guid eventId, int count = 1);
     }
 }

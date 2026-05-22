@@ -9,6 +9,18 @@ namespace Practice.Models
             Title = null!;
         }
 
+        public Event(Guid id, string title, string? description, DateTime startAt, DateTime endAt, int totalSeats, int availableSeats)
+        {
+            Id = id;
+            Title = title;
+            Description = description;
+            StartAt = startAt;
+            EndAt = endAt;
+            TotalSeats = totalSeats;
+            AvailableSeats = availableSeats;
+        }
+
+
         public Guid Id { get; set; }
         public string Title { get; set; }
         public string? Description { get; set; }
