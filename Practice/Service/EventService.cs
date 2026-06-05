@@ -1,17 +1,17 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Practice.Controllers.DTO;
-using Practice.DataAccess;
 using Practice.Models;
+using Practice.Repositories;
 
 namespace Practice.Service
 {
-    public class EventService(AppDbContext context) : IEventService
+    public class EventService(IEventRepository eventRepository) : IEventService
     {
-        private readonly AppDbContext _context = context;
+        private readonly IEventRepository _eventRepository = eventRepository;
 
         public async Task<PaginatedResult<Event>> GetAllAsync(EventQueryParameters query)
         {
-            var eventsQuery = _context.Events.AsQueryable();
+            var eventsQuery = _eventRepository.GetAll();
 
             if (!string.IsNullOrWhiteSpace(query.Title))
             {
@@ -46,7 +46,7 @@ namespace Practice.Service
             };
         }
 
-        public Task<Event?> GetByIdAsync(Guid id) => _context.Events.FirstOrDefaultAsync(e => e.Id == id);
+        public Task<Event?> GetByIdAsync(Guid id) => _eventRepository.GetByIdAsync(id);
 
         public async Task<Event> CreateAsync(EventCreateDto evt)
         {
@@ -61,9 +61,8 @@ namespace Practice.Service
                 evt.AvailableSeats
                 );
 
-            _context.Add(newEvent);
-
-            await _context.SaveChangesAsync();
+            _eventRepository.Add(newEvent);
+            await _eventRepository.SaveChangesAsync();
 
             return newEvent;
 
@@ -80,7 +79,7 @@ namespace Practice.Service
             existing.EndAt = updatedEvent.EndAt;
             existing.TotalSeats = updatedEvent.TotalSeats;
 
-            await _context.SaveChangesAsync();
+            await _eventRepository.SaveChangesAsync();
 
             return true;
         }
@@ -89,9 +88,9 @@ namespace Practice.Service
             var existing = await GetByIdAsync(id);
             if (existing == null) return false;
 
-            _context.Remove(existing);
+            _eventRepository.Remove(existing);
 
-            await _context.SaveChangesAsync();
+            await _eventRepository.SaveChangesAsync();
 
             return true;
         }

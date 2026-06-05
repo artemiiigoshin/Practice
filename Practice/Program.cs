@@ -2,7 +2,6 @@ using Microsoft.EntityFrameworkCore;
 using Practice.DataAccess;
 using Practice.Extensions;
 using Practice.Middlewares;
-using Practice.Service;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -25,7 +24,7 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    db.Database.EnsureCreated();
+    db.Database.Migrate();
 }
 
 app.UseMiddleware<GlobalExceptionHandlingMiddleware>();

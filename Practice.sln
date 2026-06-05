@@ -12,6 +12,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Элементы решен
 		README.md = README.md
 	EndProjectSection
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IntegrationTests", "IntegrationTests\IntegrationTests.csproj", "{542D2396-0F60-43FF-B14A-8C88AC8CCC97}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -26,6 +28,10 @@ Global
 		{BE13CA5E-3499-40B8-A86A-6CE186D00933}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{BE13CA5E-3499-40B8-A86A-6CE186D00933}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{BE13CA5E-3499-40B8-A86A-6CE186D00933}.Release|Any CPU.Build.0 = Release|Any CPU
+		{542D2396-0F60-43FF-B14A-8C88AC8CCC97}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{542D2396-0F60-43FF-B14A-8C88AC8CCC97}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{542D2396-0F60-43FF-B14A-8C88AC8CCC97}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{542D2396-0F60-43FF-B14A-8C88AC8CCC97}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
