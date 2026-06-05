@@ -1,34 +1,31 @@
-﻿using Practice.Models;
+﻿using Microsoft.EntityFrameworkCore;
+using Practice.DataAccess;
+using Practice.Models;
 
 namespace Practice.Service
 {
-    public class BookingProcessingBackgroundService : BackgroundService
+    public class BookingProcessingBackgroundService(IServiceScopeFactory scopeFactory,
+            ILogger<BookingProcessingBackgroundService> logger) : BackgroundService
     {
-        private readonly IServiceProvider _serviceProvider;
-        private readonly ILogger<BookingProcessingBackgroundService> _logger;
-        private readonly SemaphoreSlim _processSemaphore = new(1, 1);
-
-        public BookingProcessingBackgroundService(
-            IServiceProvider serviceProvider,
-            ILogger<BookingProcessingBackgroundService> logger)
-        {
-            _serviceProvider = serviceProvider;
-            _logger = logger;
-        }
+        private readonly IServiceScopeFactory _scopeFactory = scopeFactory;
+        private readonly ILogger<BookingProcessingBackgroundService> _logger = logger;
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
             while (!stoppingToken.IsCancellationRequested)
             {
-                using var scope = _serviceProvider.CreateScope();
-                var eventService = scope.ServiceProvider.GetRequiredService<IEventService>();
-                var bookingService = scope.ServiceProvider.GetRequiredService<IBookingService>();
+                List<Guid> pendingBookings;
 
-                var pendingBookings = await bookingService.GetPendingBookingsAsync();
+                using (var scope = _scopeFactory.CreateScope())
+                {
+                    var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
-                var tasks = pendingBookings
-                    .Where(booking => booking.ProcessedAt is null)
-                    .Select(booking => ProcessBookingAsync(booking, bookingService, eventService, stoppingToken));
+                    pendingBookings = await context.Bookings
+                        .Where(x => x.Status == BookingStatus.Pending)
+                        .Select(x => x.Id)
+                        .ToListAsync(stoppingToken);
+                }
+                var tasks = pendingBookings.Select(id => ProcessBookingAsync(id, stoppingToken));
 
                 await Task.WhenAll(tasks);
 
@@ -37,41 +34,43 @@ namespace Practice.Service
         }
 
         private async Task ProcessBookingAsync(
-            Booking booking,
-            IBookingService bookingService,
-            IEventService eventService,
+            Guid bookingId,
             CancellationToken stoppingToken)
         {
+            using var scope = _scopeFactory.CreateScope();
+
+            var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
             try
             {
                 await Task.Delay(2000, stoppingToken);
 
-                await _processSemaphore.WaitAsync(stoppingToken);
+                var booking = await context.Bookings.FirstOrDefaultAsync(x => x.Id == bookingId, stoppingToken);
 
-                try
+                if (booking is null)
                 {
-                    var evt = eventService.GetById(booking.EventId);
-
-                    if (evt is null)
-                    {
-                        booking.Reject();
-                        await bookingService.UpdateBookingAsync(booking);
-
-                        _logger.LogWarning(
-                            "Booking {BookingId} rejected because event {EventId} was not found.",
-                            booking.Id,
-                            booking.EventId);
-
-                        return;
-                    }
-
-                    booking.Confirm();
-                    await bookingService.UpdateBookingAsync(booking);
+                    return;
                 }
-                finally
+
+                var evt = await context.Events.FirstOrDefaultAsync(evt => evt.Id == booking.EventId, stoppingToken);
+
+                if (evt is null)
                 {
-                    _processSemaphore.Release();
+                    booking.Reject();
+
+                    await context.SaveChangesAsync(stoppingToken);
+
+                    _logger.LogWarning(
+                        "Booking {BookingId} rejected because event {EventId} was not found.",
+                        booking.Id,
+                        booking.EventId);
+
+                    return;
                 }
+
+                booking.Confirm();
+
+                await context.SaveChangesAsync(stoppingToken);       
             }
             catch (OperationCanceledException)
             {
@@ -79,22 +78,28 @@ namespace Practice.Service
             }
             catch (Exception ex)
             {
-                var evt = eventService.GetById(booking.EventId);
+                var booking = await context.Bookings
+                                   .FirstOrDefaultAsync(booking => booking.Id == bookingId, CancellationToken.None);
 
-                booking.Reject();
-
-                if (evt is not null)
+                if (booking is not null)
                 {
-                    eventService.ReleaseSeats(evt.Id);
-                    eventService.Update(evt);
-                }
+                    booking.Reject();
 
-                await bookingService.UpdateBookingAsync(booking);
+                    var evt = await context.Events
+                        .FirstOrDefaultAsync(evt => evt.Id == booking.EventId, CancellationToken.None);
+
+                    if (evt is not null)
+                    {
+                        EventSeatManager.ReleaseSeats(evt);
+                    }
+
+                    await context.SaveChangesAsync(CancellationToken.None);
+                }
 
                 _logger.LogError(
                     ex,
                     "Unexpected error while processing booking {BookingId}. Booking was rejected.",
-                    booking.Id);
+                    bookingId);
             }
         }
     }

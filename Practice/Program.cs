@@ -1,3 +1,5 @@
+using Microsoft.EntityFrameworkCore;
+using Practice.DataAccess;
 using Practice.Extensions;
 using Practice.Middlewares;
 using Practice.Service;
@@ -8,6 +10,9 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
 
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+
 builder.Services.AddApplicationServices();
 
 builder.Services.AddSwaggerGen(c =>
@@ -16,6 +21,12 @@ builder.Services.AddSwaggerGen(c =>
 });
 
 var app = builder.Build();
+
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    db.Database.EnsureCreated();
+}
 
 app.UseMiddleware<GlobalExceptionHandlingMiddleware>();
 

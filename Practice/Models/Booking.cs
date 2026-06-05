@@ -2,6 +2,20 @@
 {
     public class Booking
     {
+        private Booking()
+        {
+            Event = null!;
+        }
+
+        public Booking(Guid id, Guid eventId, BookingStatus status, DateTime createdAt, DateTime? processedAt)
+        {
+            Id = id;
+            EventId = eventId;
+            Status = status;
+            CreatedAt = createdAt;
+            ProcessedAt = processedAt;
+        }
+
         public Guid Id { get; set; }
 
         public Guid EventId { get; set; }
@@ -23,6 +37,8 @@
             Status = BookingStatus.Rejected;
             ProcessedAt = DateTime.UtcNow;
         }
+
+        public Event Event { get; set; } = null!;
     }
 }
 

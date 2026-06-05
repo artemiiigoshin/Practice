@@ -8,7 +8,7 @@ namespace Tests
         [Fact]
         public void CheckTime_Should_Return_False_And_ErrorMessage_When_EndAt_Is_Before_StartAt()
         {
-            var dto = new EventCreateAndUpdateDto
+            var dto = new EventRequestDto
             {
                 Title = "Test Event",
                 Description = "Test Description",
@@ -25,7 +25,7 @@ namespace Tests
         [Fact]
         public void CheckTime_Should_Return_False_And_ErrorMessage_When_EndAt_Is_Equal_To_StartAt()
         {
-            var dto = new EventCreateAndUpdateDto
+            var dto = new EventRequestDto
             {
                 Title = "Test Event",
                 Description = "Test Description",
@@ -42,7 +42,7 @@ namespace Tests
         [Fact]
         public void CheckTime_Should_Return_True_And_Null_ErrorMessage_When_Dates_Are_Valid()
         {
-            var dto = new EventCreateAndUpdateDto
+            var dto = new EventRequestDto
             {
                 Title = "Test Event",
                 Description = "Test Description",

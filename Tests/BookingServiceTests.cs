@@ -1,36 +1,50 @@
-﻿using Practice.Models;
+﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using Practice.Controllers.DTO;
+using Practice.DataAccess;
+using Practice.Models;
 using Practice.Service;
 
 namespace Tests
 {
     public class BookingServiceTests
     {
-        private readonly EventService _eventService;
-        private readonly BookingService _bookingService;
+        private readonly ServiceProvider _serviceProvider;
+        private readonly IEventService _eventService;
+        private readonly IBookingService _bookingService;
 
         public BookingServiceTests()
         {
-            _eventService = new EventService();
-            _bookingService = new BookingService(_eventService);
+            var dbName = Guid.NewGuid().ToString();
+
+            var services = new ServiceCollection();
+
+            services.AddDbContext<AppDbContext>(options =>
+                options.UseInMemoryDatabase(dbName));
+
+            services.AddScoped<IEventService, EventService>();
+            services.AddScoped<IBookingService, BookingService>();
+
+            _serviceProvider = services.BuildServiceProvider();
+            _eventService = _serviceProvider.GetRequiredService<IEventService>();
+            _bookingService = _serviceProvider.GetRequiredService<IBookingService>();
         }
 
-        private Event CreateEvent()
+        private async Task<Event> CreateEventAsync()
         {
-            return _eventService.Create(new Event
-            {
-                Title = "Test event",
-                Description = "Test description",
-                StartAt = DateTime.UtcNow.AddDays(1),
-                EndAt = DateTime.UtcNow.AddDays(1).AddHours(2),
-                TotalSeats = 5,
-                AvailableSeats = 5
-            });
+            return await _eventService.CreateAsync(new EventCreateDto(
+                "Test event",
+                "Test description",
+                DateTime.UtcNow.AddDays(1),
+                DateTime.UtcNow.AddDays(1).AddHours(2),
+                5,
+                5));
         }
 
         [Fact]
         public async Task Create_EventExisting_Returns_PendingStatus()
         {
-            var evt = CreateEvent();
+            var evt = await CreateEventAsync();
 
             var booking = await _bookingService.CreateBookingAsync(evt.Id);
 
@@ -45,7 +59,7 @@ namespace Tests
         [Fact]
         public async Task Create_MultipleBookings_ReturnsUniqueIds()
         {
-            var evt = CreateEvent();
+            var evt = await CreateEventAsync();
 
             var booking1 = await _bookingService.CreateBookingAsync(evt.Id);
             var booking2 = await _bookingService.CreateBookingAsync(evt.Id);
@@ -61,7 +75,8 @@ namespace Tests
         [Fact]
         public async Task Get_BookingExisting_ReturnsCorrectBooking()
         {
-            var evt = CreateEvent();
+            var evt = await CreateEventAsync();
+
             var createdBooking = await _bookingService.CreateBookingAsync(evt.Id);
 
             var result = await _bookingService.GetBookingByIdAsync(createdBooking.Id);
@@ -77,7 +92,8 @@ namespace Tests
         [Fact]
         public async Task Reject_SetsStatusRejected()
         {
-            var evt = CreateEvent();
+            var evt = await CreateEventAsync();
+
             var booking = await _bookingService.CreateBookingAsync(evt.Id);
 
             booking.Reject();
@@ -89,7 +105,8 @@ namespace Tests
         [Fact]
         public async Task Get_ReturnsStatusReject()
         {
-            var evt = CreateEvent();
+            var evt = await CreateEventAsync();
+
             var booking = await _bookingService.CreateBookingAsync(evt.Id);
 
             booking.Status = BookingStatus.Rejected;
@@ -114,8 +131,9 @@ namespace Tests
         [Fact]
         public async Task Create_EventDeleted_Exception()
         {
-            var evt = CreateEvent();
-            _eventService.Delete(evt.Id);
+            var evt = await CreateEventAsync();
+
+            await _eventService.DeleteAsync(evt.Id);
 
             await Assert.ThrowsAsync<InvalidOperationException>(async () =>
                 await _bookingService.CreateBookingAsync(evt.Id));
@@ -132,7 +150,8 @@ namespace Tests
         [Fact]
         public async Task ProcessBooking_SetsConfirmedStatus()
         {
-            var evt = CreateEvent();
+            var evt = await CreateEventAsync();
+
             var booking = await _bookingService.CreateBookingAsync(evt.Id);
 
             await _bookingService.ProcessBookingAsync(booking, CancellationToken.None);
@@ -144,7 +163,7 @@ namespace Tests
         [Fact]
         public async Task CreateBooking_AvailableSeatsByOne()
         {
-            var evt = CreateEvent();
+            var evt = await CreateEventAsync();
 
             await _bookingService.CreateBookingAsync(evt.Id);
 
@@ -154,7 +173,7 @@ namespace Tests
         [Fact]
         public async Task CreateBooking_WhenSeatsAreExhausted_Exception()
         {
-            var evt = CreateEvent();
+            var evt = await CreateEventAsync();
 
             for (var i = 0; i < evt.TotalSeats; i++)
             {
@@ -162,35 +181,52 @@ namespace Tests
             }
 
             await Assert.ThrowsAsync<NoAvailableSeatsException>(() =>
-                _bookingService.CreateBookingAsync(evt.Id));
+                 _bookingService.CreateBookingAsync(evt.Id));
         }
 
         [Fact]
         public async Task RejectReleaseSeats_RestoresAvailableSeats()
         {
-            var evt = CreateEvent();
+            var evt = await CreateEventAsync();
 
             var booking = await _bookingService.CreateBookingAsync(evt.Id);
+            booking.Reject();
 
-            booking.Status = BookingStatus.Rejected;
-            booking.ProcessedAt = DateTime.UtcNow;
+            var updatedEvent = await _eventService.GetByIdAsync(evt.Id);
 
-            _eventService.ReleaseSeats(evt.Id);
+            Assert.NotNull(updatedEvent);
 
-            Assert.Equal(evt.TotalSeats, evt.AvailableSeats);
+            EventSeatManager.ReleaseSeats(updatedEvent);
+
+            using var scope = _serviceProvider.CreateScope();
+            var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+            await context.SaveChangesAsync();
+
+            var resultEvent = await _eventService.GetByIdAsync(evt.Id);
+
+            Assert.NotNull(resultEvent);
+            Assert.Equal(resultEvent!.TotalSeats, resultEvent.AvailableSeats);
         }
 
         [Fact]
         public async Task RejectReleaseSeats_AllowsNewBooking()
         {
-            var evt = CreateEvent();
+            var evt = await CreateEventAsync();
 
             var firstBooking = await _bookingService.CreateBookingAsync(evt.Id);
+            firstBooking.Reject();
 
-            firstBooking.Status = BookingStatus.Rejected;
-            firstBooking.ProcessedAt = DateTime.UtcNow;
+            var updatedEvent = await _eventService.GetByIdAsync(evt.Id);
 
-            _eventService.ReleaseSeats(evt.Id);
+            Assert.NotNull(updatedEvent);
+
+            EventSeatManager.ReleaseSeats(updatedEvent);
+
+            using var scope = _serviceProvider.CreateScope();
+            var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+            await context.SaveChangesAsync();
 
             var secondBooking = await _bookingService.CreateBookingAsync(evt.Id);
 
@@ -200,7 +236,7 @@ namespace Tests
         [Fact]
         public async Task ConcurrentBookings_NoOverbooking()
         {
-            var evt = CreateEvent();
+            var evt = await CreateEventAsync();
 
             var tasks = Enumerable.Range(0, 20)
                 .Select(async _ =>
@@ -226,7 +262,7 @@ namespace Tests
         [Fact]
         public async Task ConcurrentBookings_UniqueIds()
         {
-            var evt = CreateEvent();
+            var evt = await CreateEventAsync();
 
             var tasks = Enumerable.Range(0, 5)
                 .Select(_ => _bookingService.CreateBookingAsync(evt.Id));

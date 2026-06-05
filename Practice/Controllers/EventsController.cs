@@ -18,7 +18,7 @@ namespace Practice.Controllers
         }
 
         [HttpGet]
-        public ActionResult<PaginatedResult<EventReadDto>> GetAll([FromQuery] EventQueryParameters query)
+        public async Task<ActionResult<PaginatedResult<EventReadDto>>> GetAll([FromQuery] EventQueryParameters query)
         {
             if (query.Page < 1)
                 return BadRequest("Page < 1.");
@@ -26,7 +26,7 @@ namespace Practice.Controllers
             if (query.PageSize < 1)
                 return BadRequest("PageSize < 1.");
 
-            var result = _eventService.GetAll(query);
+            var result = await _eventService.GetAllAsync(query);
 
             var response = new PaginatedResult<EventReadDto>
             {
@@ -49,9 +49,9 @@ namespace Practice.Controllers
         }
 
         [HttpGet("{id:guid}")]
-        public ActionResult<EventReadDto> GetById(Guid id)
+        public async Task<ActionResult<EventReadDto>> GetById(Guid id)
         {
-            var evt = _eventService.GetById(id);
+            var evt = await _eventService.GetByIdAsync(id);
             if (evt == null) return NotFound();
 
             var dto = new EventReadDto(
@@ -68,7 +68,7 @@ namespace Practice.Controllers
         }
 
         [HttpPost]
-        public ActionResult<EventReadDto> Create(EventCreateAndUpdateDto CreateDto)
+        public async Task<ActionResult<EventReadDto>> Create(EventRequestDto CreateDto)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
@@ -76,17 +76,17 @@ namespace Practice.Controllers
             if (!EventValidator.CheckTime(CreateDto, out var error))
                 return BadRequest(error);
 
-            var newEvent = new Event
-            {
-                Title = CreateDto.Title,
-                Description = CreateDto.Description,
-                StartAt = CreateDto.StartAt,
-                EndAt = CreateDto.EndAt,
-                TotalSeats = CreateDto.TotalSeats,
-                AvailableSeats = CreateDto.TotalSeats
-            };
+            var newEvent = new EventCreateDto
+            (
+                CreateDto.Title,
+                CreateDto.Description,
+                CreateDto.StartAt,
+                CreateDto.EndAt,
+                CreateDto.TotalSeats,
+                CreateDto.TotalSeats
+            );
 
-            var createdEvent = _eventService.Create(newEvent);
+            var createdEvent = await _eventService.CreateAsync(newEvent);
 
             var result = new EventReadDto
             (
@@ -103,7 +103,7 @@ namespace Practice.Controllers
         }
 
         [HttpPut("{id:guid}")]
-        public IActionResult Update(Guid id, EventCreateAndUpdateDto updateDto)
+        public async Task<IActionResult> Update(Guid id, EventRequestDto updateDto)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
@@ -111,17 +111,17 @@ namespace Practice.Controllers
             if (!EventValidator.CheckTime(updateDto, out var error))
                 return BadRequest(error);
 
-            var updatedEvent = new Event
-            {
-                Id = id,
-                Title = updateDto.Title,
-                Description = updateDto.Description,
-                StartAt = updateDto.StartAt,
-                EndAt = updateDto.EndAt,
-                TotalSeats = updateDto.TotalSeats
-            };
+            var updatedEvent = new EventUpdateDto
+            (
+                id,
+                updateDto.Title,
+                updateDto.Description,
+                updateDto.StartAt,
+                updateDto.EndAt,
+                updateDto.TotalSeats
+            );
 
-            var result = _eventService.Update(updatedEvent);
+            var result = await _eventService.UpdateAsync(updatedEvent);
             if (!result)
                 return NotFound();
 
@@ -129,10 +129,10 @@ namespace Practice.Controllers
         }
 
         [HttpDelete("{id:guid}")]
-        public IActionResult Delete(Guid id)
+        public async Task<IActionResult> Delete(Guid id)
         {
 
-            var result = _eventService.Delete(id);
+            var result = await _eventService.DeleteAsync(id);
 
             if (!result)
                 return NotFound();

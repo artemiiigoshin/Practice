@@ -1,57 +1,72 @@
-﻿using Practice.Controllers.DTO;
-using Practice.Models;
+﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using Practice.Controllers.DTO;
+using Practice.DataAccess;
 using Practice.Service;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace Tests
 {
     public class EventServiceTests
     {
-        [Fact]
-        public void Create_Should_Add_Event()
+        private readonly ServiceProvider _serviceProvider;
+        private readonly IEventService _eventService;
+
+        public EventServiceTests()
         {
-            var service = new EventService();
+            var dbName = Guid.NewGuid().ToString();
 
-            var newEvent = new Event
-            {
-                Title = "Test Event",
-                Description = "Test Description",
-                StartAt = new DateTime(2025, 1, 1),
-                EndAt = new DateTime(2025, 1, 2)
-            };
+            var services = new ServiceCollection();
 
-            var created = service.Create(newEvent);
+            services.AddDbContext<AppDbContext>(options =>
+                options.UseInMemoryDatabase(dbName));
 
-            var result = service.GetAll(new EventQueryParameters());
+            services.AddScoped<IEventService, EventService>();
+
+            _serviceProvider = services.BuildServiceProvider();
+            _eventService = _serviceProvider.GetRequiredService<IEventService>();
+        }
+
+        [Fact]
+        public async Task Create_Should_Add_Event()
+        {
+            var newEvent = new EventCreateDto(
+                "Test Event",
+                "Test Description",
+                new DateTime(2025, 1, 1),
+                new DateTime(2025, 1, 2),
+                10,
+                10
+                );
+
+            var created = await _eventService.CreateAsync(newEvent);
+
+            var result = await _eventService.GetAllAsync(new EventQueryParameters());
 
             Assert.Single(result.Items);
             Assert.Equal("Test Event", result.Items[0].Title);
         }
 
         [Fact]
-        public void GetAll_Should_Return_All_Events()
+        public async Task GetAll_Should_Return_All_Events()
         {
-            var service = new EventService();
+            var created = await _eventService.CreateAsync(new EventCreateDto(
+                "Event 1",
+                "Description 1",
+                new DateTime(2025, 1, 1),
+                new DateTime(2025, 1, 2),
+                10,
+                10
+                ));
 
-            service.Create(new Event
-            {
-                Title = "Event 1",
-                Description = "Description 1",
-                StartAt = new DateTime(2025, 1, 1),
-                EndAt = new DateTime(2025, 1, 2)
-            });
+            await _eventService.CreateAsync(new EventCreateDto(
+                "Event 2",
+                "Description 2",
+                new DateTime(2025, 1, 1),
+                new DateTime(2025, 1, 2),
+                10,
+                10));
 
-            service.Create(new Event
-            {
-                Title = "Event 2",
-                Description = "Description 2",
-                StartAt = new DateTime(2025, 1, 1),
-                EndAt = new DateTime(2025, 1, 2)
-            });
-
-            var result = service.GetAll(new EventQueryParameters());
+            var result = await _eventService.GetAllAsync(new EventQueryParameters());
 
             Assert.Equal(2, result.TotalCount);
             Assert.Equal(2, result.ItemsCount);
@@ -60,19 +75,17 @@ namespace Tests
 
         #region GetById
         [Fact]
-        public void GetById_Should_Return_Event_When_Event_Exists()
+        public async Task GetById_Should_Return_Event_When_Event_Exists()
         {
-            var service = new EventService();
+            var created = await _eventService.CreateAsync(new EventCreateDto(
+                "Test Event",
+                "Test Description",
+                new DateTime(2025, 1, 1),
+                new DateTime(2025, 1, 2),
+                10,
+                10));
 
-            var created = service.Create(new Event
-            {
-                Title = "Test Event",
-                Description = "Test Description",
-                StartAt = new DateTime(2025, 1, 1),
-                EndAt = new DateTime(2025, 1, 2)
-            });
-
-            var result = service.GetById(created.Id);
+            var result = await _eventService.GetByIdAsync(created.Id);
 
             Assert.NotNull(result);
             Assert.Equal(created.Id, result!.Id);
@@ -81,11 +94,9 @@ namespace Tests
         }
 
         [Fact]
-        public void GetById_Should_Return_Null_When_Event_Does_Not_Exist()
+        public async Task GetById_Should_Return_Null_When_Event_Does_Not_Exist()
         {
-            var service = new EventService();
-
-            var result = service.GetById(Guid.NewGuid());
+            var result = await _eventService.GetByIdAsync(Guid.NewGuid());
 
             Assert.Null(result);
         }
@@ -93,29 +104,26 @@ namespace Tests
 
         #region Update
         [Fact]
-        public void Update_Should_Return_True_And_Update_Event_When_Exists()
+        public async Task Update_Should_Return_True_And_Update_Event_When_Exists()
         {
-            var service = new EventService();
+            var created = await _eventService.CreateAsync(new EventCreateDto(
+                "Old Title",
+                "Old Description",
+                new DateTime(2025, 1, 1),
+                new DateTime(2025, 1, 2),
+                10,
+                10));
 
-            var created = service.Create(new Event
-            {
-                Title = "Old Title",
-                Description = "Old Description",
-                StartAt = new DateTime(2025, 1, 1),
-                EndAt = new DateTime(2025, 1, 2)
-            });
+            var updatedEvent = new EventUpdateDto(
+                created.Id,
+                "New Title",
+                "New Description",
+                new DateTime(2025, 2, 1),
+                new DateTime(2025, 2, 2),
+                20);
 
-            var updatedEvent = new Event
-            {
-                Id = created.Id,
-                Title = "New Title",
-                Description = "New Description",
-                StartAt = new DateTime(2025, 2, 1),
-                EndAt = new DateTime(2025, 2, 2)
-            };
-
-            var result = service.Update(updatedEvent);
-            var fetched = service.GetById(created.Id);
+            var result = await _eventService.UpdateAsync(updatedEvent);
+            var fetched = await _eventService.GetByIdAsync(created.Id);
 
             Assert.True(result);
             Assert.NotNull(fetched);
@@ -124,20 +132,17 @@ namespace Tests
         }
 
         [Fact]
-        public void Update_Should_Return_False_When_Event_Does_Not_Exist()
+        public async Task Update_Should_Return_False_When_Event_Does_Not_Exist()
         {
-            var service = new EventService();
+            var updatedEvent = new EventUpdateDto(
+                Guid.NewGuid(),
+                "Doesn't matter",
+                "Doesn't matter",
+                new DateTime(2025, 1, 1),
+                new DateTime(2025, 1, 2),
+                10);
 
-            var updatedEvent = new Event
-            {
-                Id = Guid.NewGuid(),
-                Title = "Doesn't matter",
-                Description = "Doesn't matter",
-                StartAt = new DateTime(2025, 1, 1),
-                EndAt = new DateTime(2025, 1, 2)
-            };
-
-            var result = service.Update(updatedEvent);
+            var result = await _eventService.UpdateAsync(updatedEvent);
 
             Assert.False(result);
         }
@@ -145,21 +150,19 @@ namespace Tests
 
         #region Delete
         [Fact]
-        public void Delete_Should_Return_True_And_Remove_Event_When_Exists()
+        public async Task Delete_Should_Return_True_And_Remove_Event_When_Exists()
         {
-            var service = new EventService();
+            var created = await _eventService.CreateAsync(new EventCreateDto(
+                "Event to delete",
+                "Description",
+                new DateTime(2025, 1, 1),
+                new DateTime(2025, 1, 2),
+                10,
+                10));
 
-            var created = service.Create(new Event
-            {
-                Title = "Event to delete",
-                Description = "Description",
-                StartAt = new DateTime(2025, 1, 1),
-                EndAt = new DateTime(2025, 1, 2)
-            });
-
-            var result = service.Delete(created.Id);
-            var fetched = service.GetById(created.Id);
-            var allEvents = service.GetAll(new EventQueryParameters());
+            var result = await _eventService.DeleteAsync(created.Id);
+            var fetched = await _eventService.GetByIdAsync(created.Id);
+            var allEvents = await _eventService.GetAllAsync(new EventQueryParameters());
 
             Assert.True(result);
             Assert.Null(fetched);
@@ -169,11 +172,9 @@ namespace Tests
         }
 
         [Fact]
-        public void Delete_Should_Return_False_When_Event_Does_Not_Exist()
+        public async Task Delete_Should_Return_False_When_Event_Does_Not_Exist()
         {
-            var service = new EventService();
-
-            var result = service.Delete(Guid.NewGuid());
+            var result = await _eventService.DeleteAsync(Guid.NewGuid());
 
             Assert.False(result);
         }
@@ -181,33 +182,31 @@ namespace Tests
 
         #region Filter
         [Fact]
-        public void GetAll_Should_Filter_By_Title()
+        public async Task GetAll_Should_Filter_By_Title()
         {
-            var service = new EventService();
+            await _eventService.CreateAsync(new EventCreateDto(
+                "Name 1",
+                "Description 1",
+                new DateTime(2025, 1, 1),
+                new DateTime(2025, 1, 2),
+                10,
+                10));
 
-            service.Create(new Event
-            {
-                Title = "Name 1",
-                Description = "Description 1",
-                StartAt = new DateTime(2025, 1, 1),
-                EndAt = new DateTime(2025, 1, 2)
-            });
+            await _eventService.CreateAsync(new EventCreateDto(
+                "Name 2 target",
+                "Description 2",
+                new DateTime(2025, 1, 1),
+                new DateTime(2025, 1, 2),
+                10,
+                10));
 
-            service.Create(new Event
-            {
-                Title = "Name 2 target",
-                Description = "Description 2",
-                StartAt = new DateTime(2025, 1, 1),
-                EndAt = new DateTime(2025, 1, 2)
-            });
-
-            service.Create(new Event
-            {
-                Title = "Name 3",
-                Description = "Description 3",
-                StartAt = new DateTime(2025, 1, 1),
-                EndAt = new DateTime(2025, 1, 2)
-            });
+            await _eventService.CreateAsync(new EventCreateDto(
+                "Name 3",
+                "Description 3",
+                new DateTime(2025, 1, 1),
+                new DateTime(2025, 1, 2),
+                10,
+                10));
 
             var query = new EventQueryParameters
             {
@@ -216,7 +215,7 @@ namespace Tests
                 PageSize = 10
             };
 
-            var result = service.GetAll(query);
+            var result = await _eventService.GetAllAsync(query);
 
             Assert.Equal(1, result.TotalCount);
             Assert.Equal(1, result.ItemsCount);
@@ -226,19 +225,17 @@ namespace Tests
 
 
         [Fact]
-        public void GetAll_Should_Return_Requested_Page()
+        public async Task GetAll_Should_Return_Requested_Page()
         {
-            var service = new EventService();
-
             for (int i = 1; i <= 25; i++)
             {
-                service.Create(new Event
-                {
-                    Title = $"Event {i}",
-                    Description = $"Description",
-                    StartAt = new DateTime(2025, 1, 1),
-                    EndAt = new DateTime(2025, 1, 2)
-                });
+                await _eventService.CreateAsync(new EventCreateDto(
+                    $"Event {i}",
+                    "Description",
+                    new DateTime(2025, 1, 1),
+                    new DateTime(2025, 1, 2),
+                    10,
+                    10));
             }
 
             var query = new EventQueryParameters
@@ -247,7 +244,7 @@ namespace Tests
                 PageSize = 10
             };
 
-            var result = service.GetAll(query);
+            var result = await _eventService.GetAllAsync(query);
 
             Assert.Equal(25, result.TotalCount);
             Assert.Equal(2, result.Page);
@@ -259,33 +256,31 @@ namespace Tests
         }
 
         [Fact]
-        public void GetAll_Should_Filter_By_Date_Range()
+        public async Task GetAll_Should_Filter_By_Date_Range()
         {
-            var service = new EventService();
+            await _eventService.CreateAsync(new EventCreateDto(
+                "Old Event",
+                "Description 1",
+                new DateTime(2025, 1, 10),
+                new DateTime(2025, 1, 10),
+                10,
+                10));
 
-            service.Create(new Event
-            {
-                Title = "Old Event",
-                Description = "Description 1",
-                StartAt = new DateTime(2025, 1, 10),
-                EndAt = new DateTime(2025, 1, 10)
-            });
+            await _eventService.CreateAsync(new EventCreateDto(
+                "Target Event",
+                "Description 2",
+                new DateTime(2025, 2, 15),
+                new DateTime(2025, 2, 15),
+                10,
+                10));
 
-            service.Create(new Event
-            {
-                Title = "Target Event",
-                Description = "Description 2",
-                StartAt = new DateTime(2025, 2, 15),
-                EndAt = new DateTime(2025, 2, 15)
-            });
-
-            service.Create(new Event
-            {
-                Title = "Future Event",
-                Description = "Description 3",
-                StartAt = new DateTime(2025, 3, 20),
-                EndAt = new DateTime(2025, 3, 20)
-            });
+            await _eventService.CreateAsync(new EventCreateDto(
+                "Future Event",
+                "Description 3",
+                new DateTime(2025, 3, 20),
+                new DateTime(2025, 3, 20),
+                10,
+                10));
 
             var query = new EventQueryParameters
             {
@@ -295,40 +290,38 @@ namespace Tests
                 PageSize = 10
             };
 
-            var result = service.GetAll(query);
+            var result = await _eventService.GetAllAsync(query);
 
             Assert.Single(result.Items);
             Assert.Equal("Target Event", result.Items[0].Title);
         }
 
         [Fact]
-        public void GetAll_Should_Apply_Combined_Filters_Correctly()
+        public async Task GetAll_Should_Apply_Combined_Filters_Correctly()
         {
-            var service = new EventService();
+            await _eventService.CreateAsync(new EventCreateDto(
+                "Title 1",
+                "Description 1",
+                new DateTime(2025, 4, 10),
+                new DateTime(2025, 4, 10),
+                10,
+                10));
 
-            service.Create(new Event
-            {
-                Title = "Title 1",
-                Description = "Description 1",
-                StartAt = new DateTime(2025, 4, 10),
-                EndAt = new DateTime(2025, 4, 10)
-            });
+            await _eventService.CreateAsync(new EventCreateDto(
+                "Title 2",
+                "Description 2",
+                new DateTime(2025, 4, 15),
+                new DateTime(2025, 4, 15),
+                10,
+                10));
 
-            service.Create(new Event
-            {
-                Title = "Title 2",
-                Description = "Description 2",
-                StartAt = new DateTime(2025, 4, 15),
-                EndAt = new DateTime(2025, 4, 15)
-            });
-
-            service.Create(new Event
-            {
-                Title = "Name",
-                Description = "Description 3",
-                StartAt = new DateTime(2025, 4, 20),
-                EndAt = new DateTime(2025, 4, 20)
-            });
+            await _eventService.CreateAsync(new EventCreateDto(
+                "Name",
+                "Description 3",
+                new DateTime(2025, 5, 15),
+                new DateTime(2025, 5, 15),
+                10,
+                10));
 
             var query = new EventQueryParameters
             {
@@ -339,7 +332,7 @@ namespace Tests
                 PageSize = 10
             };
 
-            var result = service.GetAll(query);
+            var result = await _eventService.GetAllAsync(query);
 
             Assert.Single(result.Items);
             Assert.Equal("Title 2", result.Items[0].Title);

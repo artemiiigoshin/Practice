@@ -2,7 +2,7 @@
 
 namespace Practice.Controllers.DTO
 {
-    public record EventCreateAndUpdateDto
+    public record EventRequestDto
     {
         [Required(ErrorMessage = "Title обязателен")]
         public required string Title { get; init; }
@@ -18,6 +18,24 @@ namespace Practice.Controllers.DTO
         [Range(1, int.MaxValue, ErrorMessage = "TotalSeats должен быть больше нуля")]
         public int TotalSeats { get; init; }
     }
+
+    public record EventCreateDto(
+        string Title,
+        string? Description,
+        DateTime StartAt,
+        DateTime EndAt,
+        int TotalSeats,
+        int AvailableSeats
+        );
+
+    public record EventUpdateDto(
+        Guid Id,
+        string Title,
+        string? Description,
+        DateTime StartAt,
+        DateTime EndAt,
+        int TotalSeats
+        );
 
     public record EventReadDto(
         Guid Id,
