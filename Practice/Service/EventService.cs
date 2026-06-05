@@ -15,8 +15,10 @@ namespace Practice.Service
 
             if (!string.IsNullOrWhiteSpace(query.Title))
             {
+                var title = query.Title.ToLower();
+
                 eventsQuery = eventsQuery.Where(e =>
-                    e.Title.Contains(query.Title, StringComparison.OrdinalIgnoreCase));
+                    e.Title.ToLower().Contains(title));
             }
 
             if (query.From.HasValue)
