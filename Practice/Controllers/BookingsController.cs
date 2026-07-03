@@ -1,7 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using Practice.Controllers.DTO;
-using Practice.Models;
-using Practice.Service;
+using Practice.Application.DTO;
+using Practice.Application.Service;
 
 namespace Practice.Controllers
 {
@@ -18,13 +17,13 @@ namespace Practice.Controllers
         }
 
         [HttpPost("events/{id:guid}/book")]
-        public ActionResult<BookingReadDto> CreateBooking(Guid id)
+        public async Task<ActionResult<BookingReadDto>> CreateBooking(Guid id)
         {
-            var evt = _eventService.GetByIdAsync(id);
+            var evt = await _eventService.GetByIdAsync(id);
             if (evt == null)
                 return NotFound();
 
-            var booking = _bookingService.CreateBookingAsync(id).Result;
+            var booking = await _bookingService.CreateBookingAsync(id);
 
             var dto = new BookingReadDto(
                 booking.Id,
@@ -38,9 +37,9 @@ namespace Practice.Controllers
         }
 
         [HttpGet("bookings/{id:guid}")]
-        public ActionResult<BookingReadDto> GetById(Guid id)
+        public async Task<ActionResult<BookingReadDto>> GetById(Guid id)
         {
-            var booking = _bookingService.GetBookingByIdAsync(id).Result;
+            var booking = await _bookingService.GetBookingByIdAsync(id);
             if (booking == null)
                 return NotFound();
 

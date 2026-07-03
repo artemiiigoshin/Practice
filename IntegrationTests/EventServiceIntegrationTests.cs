@@ -1,4 +1,4 @@
-﻿using Practice.Controllers.DTO;
+﻿using Practice.Application.DTO;
 using Practice.Models;
 using Practice.Repositories;
 using Practice.Service;

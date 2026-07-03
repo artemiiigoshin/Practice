@@ -1,8 +1,7 @@
-﻿using Microsoft.AspNetCore.Http.HttpResults;
-using Microsoft.AspNetCore.Mvc;
-using Practice.Controllers.DTO;
-using Practice.Models;
-using Practice.Service;
+﻿using Microsoft.AspNetCore.Mvc;
+using Practice.Application.DTO;
+using Practice.Application.Service;
+using Practice.Domain.Models;
 
 namespace Practice.Controllers
 {
@@ -73,7 +72,7 @@ namespace Practice.Controllers
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            if (!EventValidator.CheckTime(CreateDto, out var error))
+            if (!EventValidator.CheckTime(CreateDto.StartAt, CreateDto.EndAt, out var error))
                 return BadRequest(error);
 
             var newEvent = new EventCreateDto
@@ -108,7 +107,7 @@ namespace Practice.Controllers
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            if (!EventValidator.CheckTime(updateDto, out var error))
+            if (!EventValidator.CheckTime(updateDto.StartAt, updateDto.EndAt, out var error))
                 return BadRequest(error);
 
             var updatedEvent = new EventUpdateDto

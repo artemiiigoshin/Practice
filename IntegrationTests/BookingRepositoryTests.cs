@@ -1,4 +1,5 @@
-﻿using Practice.Models;
+﻿using Practice.Domain.Models;
+using Practice.Models;
 using Practice.Repositories;
 
 namespace IntegrationTests;

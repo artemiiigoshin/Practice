@@ -1,5 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using Practice.DataAccess;
+using Practice.Infrastructure.DataContext;
 using Testcontainers.PostgreSql;
 
 namespace IntegrationTests;
