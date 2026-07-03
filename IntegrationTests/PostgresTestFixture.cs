@@ -7,6 +7,7 @@ namespace IntegrationTests;
 public sealed class PostgresTestFixture : IAsyncLifetime
 {
     private readonly PostgreSqlContainer _container = new PostgreSqlBuilder()
+        .WithImage("postgres:17-alpine")
         .WithDatabase("practice_tests")
         .WithUsername("postgres")
         .WithPassword("postgres")

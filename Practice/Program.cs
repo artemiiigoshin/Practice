@@ -16,7 +16,7 @@ builder.Services.AddApplicationServices();
 
 builder.Services.AddSwaggerGen(c =>
 {
-    c.SwaggerDoc("v3", new() { Title = "Event API", Version = "sprint-3" });
+    c.SwaggerDoc("v3", new() { Title = "Event API", Version = "sprint-6" });
 });
 
 var app = builder.Build();
@@ -34,7 +34,7 @@ if (app.Environment.IsDevelopment() || app.Environment.IsStaging())
     app.UseSwagger();
     app.UseSwaggerUI(c =>
     {
-        c.SwaggerEndpoint("/swagger/v3/swagger.json", "Event API V3");
+        c.SwaggerEndpoint("/swagger/v3/swagger.json", "Event API V6");
         c.RoutePrefix = string.Empty;
     });
 }
