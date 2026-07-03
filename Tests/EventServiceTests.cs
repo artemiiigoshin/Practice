@@ -2,6 +2,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Practice.Controllers.DTO;
 using Practice.DataAccess;
+using Practice.Repositories;
 using Practice.Service;
 
 namespace Tests
@@ -19,6 +20,7 @@ namespace Tests
 
             services.AddDbContext<AppDbContext>(options =>
                 options.UseInMemoryDatabase(dbName));
+            services.AddScoped<IEventRepository, EventRepository>();
 
             services.AddScoped<IEventService, EventService>();
 

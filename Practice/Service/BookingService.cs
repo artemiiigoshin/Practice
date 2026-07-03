@@ -1,12 +1,16 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Practice.DataAccess;
 using Practice.Models;
+using Practice.Repositories;
 
 namespace Practice.Service
 {
-    public class BookingService(AppDbContext context, IEventService eventService) : IBookingService
+    public class BookingService(
+    IBookingRepository bookingRepository,
+    IEventRepository eventRepository) : IBookingService
     {
-        private readonly AppDbContext _context = context;
+        private readonly IBookingRepository _bookingRepository = bookingRepository;
+        private readonly IEventRepository _eventRepository = eventRepository;
 
         private static readonly SemaphoreSlim BookingSemaphore = new(1, 1);
 
@@ -16,7 +20,7 @@ namespace Practice.Service
 
             try
             {
-                var evt = await _context.Events.FirstOrDefaultAsync(e => e.Id == eventId);
+                var evt = await _eventRepository.GetByIdAsync(eventId);
                 if (evt is null)
                     throw new InvalidOperationException("Event not found");
 
@@ -34,9 +38,9 @@ namespace Practice.Service
                     null
                 );
 
-                _context.Bookings.Add(booking);
+                _bookingRepository.Add(booking);
 
-                await _context.SaveChangesAsync();
+                await _bookingRepository.SaveChangesAsync();
 
                 return booking;
             }
@@ -46,21 +50,16 @@ namespace Practice.Service
             }
         }
 
-        public Task<Booking?> GetBookingByIdAsync(Guid bookingId)
-        {
-            return _context.Bookings.FirstOrDefaultAsync(x => x.Id == bookingId);
-        }
+        public Task<Booking?> GetBookingByIdAsync(Guid bookingId) => _bookingRepository.GetByIdAsync(bookingId);
 
         public Task<List<Booking>> GetPendingBookingsAsync()
         {
-            return _context.Bookings
-                .Where(x => x.Status == BookingStatus.Pending)
-                .ToListAsync();
+            return _bookingRepository.GetPendingBookingsAsync();
         }
 
         public async Task UpdateBookingAsync(Booking booking)
         {
-            var existingBooking = await _context.Bookings.FirstOrDefaultAsync(x => x.Id == booking.Id);
+            var existingBooking = await _bookingRepository.GetByIdAsync(booking.Id);
             if (existingBooking is null)
             {
                 return;
@@ -71,7 +70,7 @@ namespace Practice.Service
             existingBooking.CreatedAt = booking.CreatedAt;
             existingBooking.ProcessedAt = booking.ProcessedAt;
 
-            await _context.SaveChangesAsync();
+            await _bookingRepository.SaveChangesAsync();
         }
 
         public async Task ProcessBookingAsync(Booking booking, CancellationToken cancellationToken)
@@ -79,7 +78,7 @@ namespace Practice.Service
             booking.Status = BookingStatus.Confirmed;
             booking.ProcessedAt = DateTime.UtcNow;
 
-            await UpdateBookingAsync(booking);
+            await _bookingRepository.SaveChangesAsync(cancellationToken);
         }
     }
 }
