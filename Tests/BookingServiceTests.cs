@@ -6,6 +6,7 @@ using Practice.Domain.Models;
 using Practice.Infrastructure.DataContext;
 using Practice.Application.Repositories;
 using Practice.Infrastructure.Repositories;
+using Practice.Domain.Exceptions;
 
 namespace Tests
 {

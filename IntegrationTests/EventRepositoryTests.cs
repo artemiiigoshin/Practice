@@ -1,6 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using Practice.Models;
-using Practice.Repositories;
+using Practice.Domain.Models;
+using Practice.Infrastructure.Repositories;
 
 namespace IntegrationTests;
 

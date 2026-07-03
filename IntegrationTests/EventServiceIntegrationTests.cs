@@ -1,7 +1,7 @@
 ﻿using Practice.Application.DTO;
-using Practice.Models;
-using Practice.Repositories;
-using Practice.Service;
+using Practice.Application.Service;
+using Practice.Domain.Models;
+using Practice.Infrastructure.Repositories;
 
 namespace IntegrationTests;
 
