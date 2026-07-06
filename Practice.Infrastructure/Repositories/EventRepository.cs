@@ -9,9 +9,9 @@ public class EventRepository(AppDbContext context) : IEventRepository
 {
     private readonly AppDbContext _context = context;
 
-    public IQueryable<Event> GetAll()
+    public List<Event> GetAll()
     {
-        return _context.Events.AsQueryable();
+        return [.. _context.Events];
     }
 
     public Task<Event?> GetByIdAsync(Guid id)

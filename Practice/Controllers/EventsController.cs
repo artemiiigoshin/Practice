@@ -72,9 +72,6 @@ namespace Practice.Controllers
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            if (!EventValidator.CheckTime(CreateDto.StartAt, CreateDto.EndAt, out var error))
-                return BadRequest(error);
-
             var newEvent = new EventCreateDto
             (
                 CreateDto.Title,
@@ -106,9 +103,6 @@ namespace Practice.Controllers
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
-
-            if (!EventValidator.CheckTime(updateDto.StartAt, updateDto.EndAt, out var error))
-                return BadRequest(error);
 
             var updatedEvent = new EventUpdateDto
             (

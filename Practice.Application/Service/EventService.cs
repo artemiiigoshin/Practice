@@ -10,7 +10,7 @@ public class EventService(IEventRepository eventRepository) : IEventService
 
     public Task<PaginatedResult<Event>> GetAllAsync(EventQueryParameters query)
     {
-        var eventsQuery = _eventRepository.GetAll();
+        IEnumerable<Event> eventsQuery = _eventRepository.GetAll();
 
         if (!string.IsNullOrWhiteSpace(query.Title))
         {
@@ -53,6 +53,14 @@ public class EventService(IEventRepository eventRepository) : IEventService
 
     public async Task<Event> CreateAsync(EventCreateDto evt)
     {
+        if (!EventValidator.CheckTime(
+        evt.StartAt,
+        evt.EndAt,
+        out var error))
+        {
+            throw new ArgumentException(error);
+        }
+
         var newEvent = new Event
             (
             Guid.NewGuid(),
@@ -73,6 +81,14 @@ public class EventService(IEventRepository eventRepository) : IEventService
 
     public async Task<bool> UpdateAsync(EventUpdateDto updatedEvent)
     {
+        if (!EventValidator.CheckTime(
+        updatedEvent.StartAt,
+        updatedEvent.EndAt,
+        out var error))
+        {
+            throw new ArgumentException(error);
+        }
+
         var existing = await GetByIdAsync(updatedEvent.Id);
         if (existing == null) return false;
 

@@ -4,7 +4,7 @@ namespace Practice.Application.Repositories;
 
 public interface IEventRepository
 {
-    IQueryable<Event> GetAll();
+    List<Event> GetAll();
     Task<Event?> GetByIdAsync(Guid id);
     void Add(Event evt);
     void Remove(Event evt);
