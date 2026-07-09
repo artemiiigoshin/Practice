@@ -1,10 +1,12 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using Practice.Controllers.DTO;
-using Practice.DataAccess;
-using Practice.Models;
-using Practice.Repositories;
-using Practice.Service;
+using Practice.Application.Service;
+using Practice.Application.DTO;
+using Practice.Domain.Models;
+using Practice.Infrastructure.DataContext;
+using Practice.Application.Repositories;
+using Practice.Infrastructure.Repositories;
+using Practice.Domain.Exceptions;
 
 namespace Tests
 {

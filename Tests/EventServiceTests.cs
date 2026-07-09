@@ -1,9 +1,10 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using Practice.Controllers.DTO;
-using Practice.DataAccess;
-using Practice.Repositories;
-using Practice.Service;
+using Practice.Application.Service;
+using Practice.Application.DTO;
+using Practice.Infrastructure.DataContext;
+using Practice.Application.Repositories;
+using Practice.Infrastructure.Repositories;
 
 namespace Tests
 {
@@ -264,7 +265,7 @@ namespace Tests
                 "Old Event",
                 "Description 1",
                 new DateTime(2025, 1, 10),
-                new DateTime(2025, 1, 10),
+                new DateTime(2025, 1, 11),
                 10,
                 10));
 
@@ -272,7 +273,7 @@ namespace Tests
                 "Target Event",
                 "Description 2",
                 new DateTime(2025, 2, 15),
-                new DateTime(2025, 2, 15),
+                new DateTime(2025, 2, 16),
                 10,
                 10));
 
@@ -280,7 +281,7 @@ namespace Tests
                 "Future Event",
                 "Description 3",
                 new DateTime(2025, 3, 20),
-                new DateTime(2025, 3, 20),
+                new DateTime(2025, 3, 21),
                 10,
                 10));
 
@@ -305,7 +306,7 @@ namespace Tests
                 "Title 1",
                 "Description 1",
                 new DateTime(2025, 4, 10),
-                new DateTime(2025, 4, 10),
+                new DateTime(2025, 4, 11),
                 10,
                 10));
 
@@ -313,7 +314,7 @@ namespace Tests
                 "Title 2",
                 "Description 2",
                 new DateTime(2025, 4, 15),
-                new DateTime(2025, 4, 15),
+                new DateTime(2025, 4, 16),
                 10,
                 10));
 
@@ -321,7 +322,7 @@ namespace Tests
                 "Name",
                 "Description 3",
                 new DateTime(2025, 5, 15),
-                new DateTime(2025, 5, 15),
+                new DateTime(2025, 5, 16),
                 10,
                 10));
 

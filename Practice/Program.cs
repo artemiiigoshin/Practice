@@ -1,31 +1,25 @@
-using Microsoft.EntityFrameworkCore;
-using Practice.DataAccess;
-using Practice.Extensions;
+using Practice.Application.Extensions;
+using Practice.Infrastructure.Extensions;
 using Practice.Middlewares;
 
 var builder = WebApplication.CreateBuilder(args);
+var version = 7;
 
 // Add services to the container.
 
 builder.Services.AddControllers();
 
-builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
-
-builder.Services.AddApplicationServices();
+builder.Services.AddApplication();
+builder.Services.AddInfrastructure(builder.Configuration);
 
 builder.Services.AddSwaggerGen(c =>
 {
-    c.SwaggerDoc("v3", new() { Title = "Event API", Version = "sprint-6" });
+    c.SwaggerDoc("v" + version, new() { Title = "Event API", Version = "sprint-" + version });
 });
 
 var app = builder.Build();
 
-using (var scope = app.Services.CreateScope())
-{
-    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    db.Database.Migrate();
-}
+await app.Services.ApplyMigrationsAsync();
 
 app.UseMiddleware<GlobalExceptionHandlingMiddleware>();
 
@@ -34,7 +28,7 @@ if (app.Environment.IsDevelopment() || app.Environment.IsStaging())
     app.UseSwagger();
     app.UseSwaggerUI(c =>
     {
-        c.SwaggerEndpoint("/swagger/v3/swagger.json", "Event API V6");
+        c.SwaggerEndpoint("/swagger/v" + version + "/swagger.json", "Event API V" + version);
         c.RoutePrefix = string.Empty;
     });
 }

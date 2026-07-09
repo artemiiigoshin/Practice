@@ -1,6 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using Practice.Models;
-using Practice.Repositories;
+using Practice.Domain.Models;
+using Practice.Infrastructure.Repositories;
 
 namespace IntegrationTests;
 
@@ -53,7 +53,7 @@ public sealed class EventRepositoryTests
         repository.Add(new Event(Guid.NewGuid(), "Second", null, DateTime.UtcNow.AddDays(3), DateTime.UtcNow.AddDays(4), 20, 20));
         await repository.SaveChangesAsync();
 
-        var events = await repository.GetAll().ToListAsync();
+        var events = repository.GetAll();
 
         Assert.Equal(2, events.Count);
     }

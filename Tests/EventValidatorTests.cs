@@ -1,5 +1,5 @@
-﻿using Practice.Controllers.DTO;
-using Practice.Models;
+﻿using Practice.Application.DTO;
+using Practice.Domain.Models;
 
 namespace Tests
 {
@@ -16,7 +16,7 @@ namespace Tests
                 EndAt = new DateTime(2025, 5, 9)
             };
 
-            var result = EventValidator.CheckTime(dto, out string? errorMessage);
+            var result = EventValidator.CheckTime(dto.StartAt, dto.EndAt, out string? errorMessage);
 
             Assert.False(result);
             Assert.Equal("EndAt должен быть позже StartAt", errorMessage);
@@ -33,7 +33,7 @@ namespace Tests
                 EndAt = new DateTime(2025, 5, 10)
             };
 
-            var result = EventValidator.CheckTime(dto, out string? errorMessage);
+            var result = EventValidator.CheckTime(dto.StartAt, dto.EndAt, out string? errorMessage);
 
             Assert.False(result);
             Assert.Equal("EndAt должен быть позже StartAt", errorMessage);
@@ -50,7 +50,7 @@ namespace Tests
                 EndAt = new DateTime(2025, 5, 11)
             };
 
-            var result = EventValidator.CheckTime(dto, out string? errorMessage);
+            var result = EventValidator.CheckTime(dto.StartAt, dto.EndAt, out string? errorMessage);
 
             Assert.True(result);
             Assert.Null(errorMessage);

@@ -2,7 +2,7 @@
 
 Простой сервис для управления мероприятиями на ASP.NET Core Web API.
 
-Решение содержит тестовый проект - Tests (Тесты контроллера и валидации)
+Решение содержит тестовый проект - Tests (Тесты контроллера и валидации) и IntegrationTests для проверки взаимодействий с БД
 
 Реализованные endpoint:
 1)Получить список всех событий
@@ -28,7 +28,7 @@
 Схема БД управляется миграциями.
 Доступ к данным реализуется через репозитории.
 
-Тесты используют БД inMemory.
+Тесты используют БД из контейнера.
 Присутствуют интеграционные тесты.
 # Запуск проекта
 
@@ -43,4 +43,57 @@ https://localhost:<порт из launchSettings.json>
 или
 http://localhost:<порт из launchSettings.json>
 Swagger доступе в Development и Stage
+
+# Архитектура проекта
+
+Проект построен по принципам Clean Architecture и разделён на 4 слоя:
+
+## Practice.Domain
+Содержит бизнес-сущности и бизнес-логику:
+- Event
+- Booking
+- EventSeatManager
+- EventValidator
+- исключения доменной области
+
+Этот слой не зависит от других слоёв.
+
+## Practice.Application
+Содержит сценарии использования приложения:
+- сервисы (EventService, BookingService)
+- DTO
+- интерфейсы репозиториев
+
+Зависит только от Practice.Domain.
+
+## Practice.Infrastructure
+Содержит реализацию доступа к данным и инфраструктурные компоненты:
+- AppDbContext
+- репозитории
+- миграции EF Core
+- background services
+
+Зависит от Practice.Application и Practice.Domain.
+
+## Practice.Presentation
+Содержит Web API:
+- контроллеры
+- middleware
+- конфигурацию приложения
+
+Зависит от всех остальных слоёв.
+
+# Создание миграций
+
+Создание миграции:
+
+dotnet ef migrations add MigrationName \
+    --project Practice.Infrastructure \
+    --startup-project Practice.Presentation
+
+Применение миграций:
+
+dotnet ef database update \
+    --project Practice.Infrastructure \
+    --startup-project Practice.Presentation
 
