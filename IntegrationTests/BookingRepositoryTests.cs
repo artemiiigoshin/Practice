@@ -1,4 +1,5 @@
 ﻿using Practice.Domain.Models;
+using Practice.Infrastructure.DataContext;
 using Practice.Infrastructure.Repositories;
 
 namespace IntegrationTests;
@@ -21,12 +22,13 @@ public sealed class BookingRepositoryTests
         await using var db = _fixture.CreateDbContext();
         var eventRepository = new EventRepository(db);
         var bookingRepository = new BookingRepository(db);
+        var user = await CreateUserAsync(db);
 
         var evt = new Event(Guid.NewGuid(), "Event", null, DateTime.UtcNow.AddDays(1), DateTime.UtcNow.AddDays(2), 10, 10);
         eventRepository.Add(evt);
         await eventRepository.SaveChangesAsync();
 
-        var booking = new Booking(Guid.NewGuid(), evt.Id, BookingStatus.Pending, DateTime.UtcNow, null);
+        var booking = new Booking(Guid.NewGuid(), evt.Id, user.Id, BookingStatus.Pending, DateTime.UtcNow, null);
 
         bookingRepository.Add(booking);
         await bookingRepository.SaveChangesAsync();
@@ -47,14 +49,15 @@ public sealed class BookingRepositoryTests
         await using var db = _fixture.CreateDbContext();
         var eventRepository = new EventRepository(db);
         var bookingRepository = new BookingRepository(db);
+        var user = await CreateUserAsync(db);
 
         var evt = new Event(Guid.NewGuid(), "Event", null, DateTime.UtcNow.AddDays(1), DateTime.UtcNow.AddDays(2), 10, 10);
         eventRepository.Add(evt);
         await eventRepository.SaveChangesAsync();
 
-        bookingRepository.Add(new Booking(Guid.NewGuid(), evt.Id, BookingStatus.Pending, DateTime.UtcNow, null));
-        bookingRepository.Add(new Booking(Guid.NewGuid(), evt.Id, BookingStatus.Confirmed, DateTime.UtcNow, DateTime.UtcNow));
-        bookingRepository.Add(new Booking(Guid.NewGuid(), evt.Id, BookingStatus.Rejected, DateTime.UtcNow, DateTime.UtcNow));
+        bookingRepository.Add(new Booking(Guid.NewGuid(), evt.Id, user.Id, BookingStatus.Pending, DateTime.UtcNow, null));
+        bookingRepository.Add(new Booking(Guid.NewGuid(), evt.Id, user.Id, BookingStatus.Confirmed, DateTime.UtcNow, DateTime.UtcNow));
+        bookingRepository.Add(new Booking(Guid.NewGuid(), evt.Id, user.Id, BookingStatus.Rejected, DateTime.UtcNow, DateTime.UtcNow));
         await bookingRepository.SaveChangesAsync();
 
         var result = await bookingRepository.GetPendingBookingsAsync();
@@ -71,6 +74,7 @@ public sealed class BookingRepositoryTests
         await using var db = _fixture.CreateDbContext();
         var eventRepository = new EventRepository(db);
         var bookingRepository = new BookingRepository(db);
+        var user = await CreateUserAsync(db);
 
         var evt = new Event(
             Guid.NewGuid(),
@@ -87,6 +91,7 @@ public sealed class BookingRepositoryTests
         var booking = new Booking(
             Guid.NewGuid(),
             evt.Id,
+            user.Id,
             BookingStatus.Pending,
             DateTime.UtcNow,
             null);
@@ -103,5 +108,19 @@ public sealed class BookingRepositoryTests
         Assert.NotNull(updatedBooking);
         Assert.Equal(BookingStatus.Confirmed, updatedBooking.Status);
         Assert.NotNull(updatedBooking.ProcessedAt);
+    }
+
+    private async Task<User> CreateUserAsync(AppDbContext db)
+    {
+        var user = new User(
+            Guid.NewGuid(),
+            $"user-{Guid.NewGuid()}",
+            "password-hash",
+            UserRole.User);
+
+        db.Users.Add(user);
+        await db.SaveChangesAsync();
+
+        return user;
     }
 }

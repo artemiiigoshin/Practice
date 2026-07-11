@@ -1,4 +1,6 @@
-﻿namespace Practice.Domain.Models;
+﻿using Practice.Domain.Exceptions;
+
+namespace Practice.Domain.Models;
 
 public class Booking
 {
@@ -7,10 +9,11 @@ public class Booking
         Event = null!;
     }
 
-    public Booking(Guid id, Guid eventId, BookingStatus status, DateTime createdAt, DateTime? processedAt)
+    public Booking(Guid id, Guid eventId, Guid userId, BookingStatus status, DateTime createdAt, DateTime? processedAt)
     {
         Id = id;
         EventId = eventId;
+        UserId = userId;
         Status = status;
         CreatedAt = createdAt;
         ProcessedAt = processedAt;
@@ -25,6 +28,7 @@ public class Booking
     public DateTime CreatedAt { get; set; }
 
     public DateTime? ProcessedAt { get; set; }
+    public Guid UserId { get; set; }
 
     public void Confirm()
     {
@@ -38,6 +42,25 @@ public class Booking
         ProcessedAt = DateTime.UtcNow;
     }
 
+    public void Cancel()
+    {
+        if (Status == BookingStatus.Cancelled)
+            throw new InvalidOperationException("Booking has already been cancelled.");
+
+        if (Status == BookingStatus.Rejected)
+            throw new InvalidOperationException("Rejected booking cannot be cancelled.");
+
+        Status = BookingStatus.Cancelled;
+        ProcessedAt = DateTime.UtcNow;
+    }
+
+    public void EnsureCanBeManagedBy(Guid userId, UserRole role)
+    {
+        if (role != UserRole.Admin && UserId != userId)
+            throw new OperationForbiddenException();
+    }
+
     public Event Event { get; set; } = null!;
+    public User User { get; set; } = null!;
 }
 

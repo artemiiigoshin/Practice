@@ -1,5 +1,6 @@
-﻿using System.ComponentModel.DataAnnotations;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
+using Practice.Domain.Exceptions;
+using System.ComponentModel.DataAnnotations;
 
 namespace Practice.Middlewares
 {
@@ -64,7 +65,10 @@ namespace Practice.Middlewares
                 ArgumentException => StatusCodes.Status400BadRequest,
                 InvalidOperationException => StatusCodes.Status400BadRequest,
                 KeyNotFoundException => StatusCodes.Status404NotFound,
-                Domain.Exceptions.NoAvailableSeatsException => StatusCodes.Status409Conflict,
+                PastEventBookingException => StatusCodes.Status409Conflict,
+                ActiveBookingLimitExceededException => StatusCodes.Status409Conflict,
+                OperationForbiddenException => StatusCodes.Status403Forbidden,
+                ExtensionException => StatusCodes.Status409Conflict,
                 _ => StatusCodes.Status500InternalServerError
             };
     }

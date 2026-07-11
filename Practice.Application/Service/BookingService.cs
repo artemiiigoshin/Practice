@@ -13,7 +13,7 @@ IEventRepository eventRepository) : IBookingService
 
     private static readonly SemaphoreSlim BookingSemaphore = new(1, 1);
 
-    public async Task<Booking> CreateBookingAsync(Guid eventId)
+    public async Task<Booking> CreateBookingAsync(Guid eventId, Guid userId)
     {
         await BookingSemaphore.WaitAsync();
 
@@ -23,15 +23,24 @@ IEventRepository eventRepository) : IBookingService
             if (evt is null)
                 throw new InvalidOperationException("Event not found");
 
+            if (evt.StartAt <= DateTime.UtcNow)
+                throw new PastEventBookingException();
+
+            var activeBookings = await _bookingRepository.CountActiveByUserIdAsync(userId);
+
+            if (activeBookings >= 5)
+                throw new ActiveBookingLimitExceededException();
+
             var reserved = EventSeatManager.TryReserveSeats(evt);
 
             if (!reserved)
-                throw new NoAvailableSeatsException();
+                throw new ExtensionException();
 
             var booking = new Booking
             (
                 Guid.NewGuid(),
                 eventId,
+                userId,
                 BookingStatus.Pending,
                 DateTime.UtcNow,
                 null
@@ -65,6 +74,7 @@ IEventRepository eventRepository) : IBookingService
         }
 
         existingBooking.EventId = booking.EventId;
+        existingBooking.UserId = booking.UserId;
         existingBooking.Status = booking.Status;
         existingBooking.CreatedAt = booking.CreatedAt;
         existingBooking.ProcessedAt = booking.ProcessedAt;
@@ -76,6 +86,28 @@ IEventRepository eventRepository) : IBookingService
     {
         booking.Status = BookingStatus.Confirmed;
         booking.ProcessedAt = DateTime.UtcNow;
+
+        await _bookingRepository.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task CancelBookingAsync(
+    Guid bookingId,
+    Guid userId,
+    UserRole role,
+    CancellationToken cancellationToken = default)
+    {
+        var booking = await _bookingRepository.GetByIdAsync(
+                bookingId,
+                cancellationToken)
+            ?? throw new InvalidOperationException("Booking not found");
+
+        booking.EnsureCanBeManagedBy(userId, role);
+
+        var evt = await _eventRepository.GetByIdAsync(booking.EventId)
+            ?? throw new InvalidOperationException("Event not found");
+
+        booking.Cancel();
+        EventSeatManager.ReleaseSeats(evt);
 
         await _bookingRepository.SaveChangesAsync(cancellationToken);
     }
