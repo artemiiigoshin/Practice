@@ -71,6 +71,7 @@ namespace Practice.Middlewares
                 OperationForbiddenException => StatusCodes.Status403Forbidden,
                 ExtensionException => StatusCodes.Status409Conflict,
                 UnauthorizedAccessException => StatusCodes.Status401Unauthorized,
+                InvalidCredentialsException => StatusCodes.Status404NotFound,
                 _ => StatusCodes.Status500InternalServerError
             };
     }

@@ -1,6 +1,7 @@
 ﻿using Practice.Application.DTO;
 using Practice.Application.Repositories;
 using Practice.Application.Security;
+using Practice.Domain.Exceptions;
 using Practice.Domain.Models;
 
 namespace Practice.Application.Service;
@@ -49,14 +50,14 @@ public sealed class UserService(
             cancellationToken);
 
         if (user is null)
-            throw new UnauthorizedAccessException("Invalid login or password.");
+            throw new InvalidCredentialsException();
 
         var passwordIsValid = _passwordHasher.Verify(
             dto.Password,
             user.PasswordHash);
 
         if (!passwordIsValid)
-            throw new UnauthorizedAccessException("Invalid login or password.");
+            throw new InvalidCredentialsException();
 
         return _jwtTokenGenerator.Generate(user);
     }

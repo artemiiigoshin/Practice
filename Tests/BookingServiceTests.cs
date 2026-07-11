@@ -364,5 +364,91 @@ namespace Tests
             Assert.Equal(BookingStatus.Pending, booking.Status);
             Assert.Equal(9, evt.AvailableSeats);
         }
+
+        [Fact]
+        public async Task CancelBooking_OwnerCancelsOwnBooking_SetsCancelledStatus()
+        {
+            var evt = await CreateEventAsync();
+            var ownerId = Guid.NewGuid();
+
+            var booking = await _bookingService.CreateBookingAsync(
+                evt.Id,
+                ownerId);
+
+            Assert.Equal(evt.TotalSeats - 1, evt.AvailableSeats);
+
+            await _bookingService.CancelBookingAsync(
+                booking.Id,
+                ownerId,
+                UserRole.User);
+
+            var updatedBooking = await _bookingService.GetBookingByIdAsync(booking.Id);
+            var updatedEvent = await _eventService.GetByIdAsync(evt.Id);
+
+            Assert.NotNull(updatedBooking);
+            Assert.NotNull(updatedEvent);
+            Assert.Equal(BookingStatus.Cancelled, updatedBooking!.Status);
+            Assert.NotNull(updatedBooking.ProcessedAt);
+            Assert.Equal(updatedEvent!.TotalSeats, updatedEvent.AvailableSeats);
+        }
+
+        [Fact]
+        public async Task CancelBooking_UserCancelsAnotherUsersBooking_Exception()
+        {
+            var evt = await CreateEventAsync();
+
+            var ownerId = Guid.NewGuid();
+            var anotherUserId = Guid.NewGuid();
+
+            var booking = await _bookingService.CreateBookingAsync(
+                evt.Id,
+                ownerId);
+
+            var exception = await Assert.ThrowsAsync<OperationForbiddenException>(() =>
+                _bookingService.CancelBookingAsync(
+                    booking.Id,
+                    anotherUserId,
+                    UserRole.User));
+
+            var updatedBooking = await _bookingService.GetBookingByIdAsync(booking.Id);
+            var updatedEvent = await _eventService.GetByIdAsync(evt.Id);
+
+            Assert.Equal(
+                "User does not have permission to perform this operation.",
+                exception.Message);
+
+            Assert.NotNull(updatedBooking);
+            Assert.NotNull(updatedEvent);
+            Assert.Equal(BookingStatus.Pending, updatedBooking!.Status);
+            Assert.Null(updatedBooking.ProcessedAt);
+            Assert.Equal(evt.TotalSeats - 1, updatedEvent!.AvailableSeats);
+        }
+
+        [Fact]
+        public async Task CancelBooking_AdminCancelsAnotherUsersBooking_SetsCancelledStatus()
+        {
+            var evt = await CreateEventAsync();
+
+            var ownerId = Guid.NewGuid();
+            var adminId = Guid.NewGuid();
+
+            var booking = await _bookingService.CreateBookingAsync(
+                evt.Id,
+                ownerId);
+
+            await _bookingService.CancelBookingAsync(
+                booking.Id,
+                adminId,
+                UserRole.Admin);
+
+            var updatedBooking = await _bookingService.GetBookingByIdAsync(booking.Id);
+            var updatedEvent = await _eventService.GetByIdAsync(evt.Id);
+
+            Assert.NotNull(updatedBooking);
+            Assert.NotNull(updatedEvent);
+            Assert.Equal(BookingStatus.Cancelled, updatedBooking!.Status);
+            Assert.NotNull(updatedBooking.ProcessedAt);
+            Assert.Equal(updatedEvent!.TotalSeats, updatedEvent.AvailableSeats);
+        }
     }
 }

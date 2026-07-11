@@ -101,12 +101,12 @@ IEventRepository eventRepository) : IBookingService
         var booking = await _bookingRepository.GetByIdAsync(
                 bookingId,
                 cancellationToken)
-            ?? throw new InvalidOperationException("Booking not found");
+            ?? throw new KeyNotFoundException("Booking not found");
 
         booking.EnsureCanBeManagedBy(userId, role);
 
         var evt = await _eventRepository.GetByIdAsync(booking.EventId)
-            ?? throw new InvalidOperationException("Event not found");
+            ?? throw new KeyNotFoundException("Event not found");
 
         booking.Cancel();
         EventSeatManager.ReleaseSeats(evt);

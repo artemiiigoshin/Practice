@@ -17,18 +17,9 @@ public sealed class UsersController(IUserService userService) : ControllerBase
         RegisterUserDto dto,
         CancellationToken cancellationToken)
     {
-        var user = await _userService.RegisterAsync(
-            dto,
-            cancellationToken);
+        await _userService.RegisterAsync(dto, cancellationToken);
 
-        return Created(
-            $"/users/{user.Id}",
-            new
-            {
-                user.Id,
-                user.Login,
-                Role = user.Role.ToString()
-            });
+        return NoContent();
     }
 
     [AllowAnonymous]
