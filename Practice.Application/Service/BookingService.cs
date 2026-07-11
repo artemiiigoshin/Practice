@@ -28,7 +28,7 @@ IEventRepository eventRepository) : IBookingService
 
             var activeBookings = await _bookingRepository.CountActiveByUserIdAsync(userId);
 
-            if (activeBookings >= 5)
+            if (activeBookings >= 10)
                 throw new ActiveBookingLimitExceededException();
 
             var reserved = EventSeatManager.TryReserveSeats(evt);

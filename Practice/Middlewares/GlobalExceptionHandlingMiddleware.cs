@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.AspNetCore.Mvc;
 using Practice.Domain.Exceptions;
 using System.ComponentModel.DataAnnotations;
 
@@ -65,10 +66,11 @@ namespace Practice.Middlewares
                 ArgumentException => StatusCodes.Status400BadRequest,
                 InvalidOperationException => StatusCodes.Status400BadRequest,
                 KeyNotFoundException => StatusCodes.Status404NotFound,
-                PastEventBookingException => StatusCodes.Status409Conflict,
+                PastEventBookingException => StatusCodes.Status400BadRequest,
                 ActiveBookingLimitExceededException => StatusCodes.Status409Conflict,
                 OperationForbiddenException => StatusCodes.Status403Forbidden,
                 ExtensionException => StatusCodes.Status409Conflict,
+                UnauthorizedAccessException => StatusCodes.Status401Unauthorized,
                 _ => StatusCodes.Status500InternalServerError
             };
     }
