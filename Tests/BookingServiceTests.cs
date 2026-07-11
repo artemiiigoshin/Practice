@@ -48,6 +48,17 @@ namespace Tests
                 5));
         }
 
+        private async Task<Event> CreateEventAsync(int totalSeats)
+        {
+            return await _eventService.CreateAsync(new EventCreateDto(
+                "Test event",
+                "Test description",
+                DateTime.UtcNow.AddDays(1),
+                DateTime.UtcNow.AddDays(1).AddHours(2),
+                totalSeats,
+                totalSeats));
+        }
+
         [Fact]
         public async Task Create_EventExisting_Returns_PendingStatus()
         {
@@ -61,6 +72,7 @@ namespace Tests
             Assert.NotEqual(Guid.Empty, booking.Id);
             Assert.True(booking.CreatedAt <= DateTime.UtcNow);
             Assert.Null(booking.ProcessedAt);
+            Assert.Equal(_userId, booking.UserId);
         }
 
         [Fact]
@@ -277,6 +289,78 @@ namespace Tests
             var bookings = await Task.WhenAll(tasks);
 
             Assert.Equal(5, bookings.Select(b => b.Id).Distinct().Count());
+        }
+
+        [Fact]
+        public async Task CreateBooking_PastEvent_ThrowsPastEventBookingException()
+        {
+            using var scope = _serviceProvider.CreateScope();
+
+            var eventRepository =
+                scope.ServiceProvider.GetRequiredService<IEventRepository>();
+
+            var pastEvent = new Event(
+                Guid.NewGuid(),
+                "Past event",
+                "Past event description",
+                DateTime.UtcNow.AddDays(-2),
+                DateTime.UtcNow.AddDays(-1),
+                5,
+                5);
+
+            eventRepository.Add(pastEvent);
+            await eventRepository.SaveChangesAsync();
+
+            await Assert.ThrowsAsync<PastEventBookingException>(() =>
+                _bookingService.CreateBookingAsync(
+                    pastEvent.Id,
+                    Guid.NewGuid()));
+        }
+
+        [Fact]
+        public async Task CreateBooking_WhenUserHasTenActiveBookings_ThrowsLimitException()
+        {
+            var evt = await CreateEventAsync(20);
+            var userId = Guid.NewGuid();
+
+            for (var i = 0; i < 10; i++)
+            {
+                await _bookingService.CreateBookingAsync(
+                    evt.Id,
+                    userId);
+            }
+
+            await Assert.ThrowsAsync<ActiveBookingLimitExceededException>(() =>
+                _bookingService.CreateBookingAsync(
+                    evt.Id,
+                    userId));
+
+            Assert.Equal(10, evt.AvailableSeats);
+        }
+
+        [Fact]
+        public async Task CreateBooking_DifferentUsersHaveIndependentLimits()
+        {
+            var evt = await CreateEventAsync(20);
+
+            var firstUserId = Guid.NewGuid();
+            var secondUserId = Guid.NewGuid();
+
+            for (var i = 0; i < 10; i++)
+            {
+                await _bookingService.CreateBookingAsync(
+                    evt.Id,
+                    firstUserId);
+            }
+
+            var booking = await _bookingService.CreateBookingAsync(
+                evt.Id,
+                secondUserId);
+
+            Assert.NotNull(booking);
+            Assert.Equal(secondUserId, booking.UserId);
+            Assert.Equal(BookingStatus.Pending, booking.Status);
+            Assert.Equal(9, evt.AvailableSeats);
         }
     }
 }
