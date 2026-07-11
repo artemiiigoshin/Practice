@@ -330,11 +330,13 @@ namespace Tests
                     userId);
             }
 
-            await Assert.ThrowsAsync<ActiveBookingLimitExceededException>(() =>
+            var ex = await Assert.ThrowsAsync<ActiveBookingLimitExceededException>(() =>
                 _bookingService.CreateBookingAsync(
                     evt.Id,
                     userId));
 
+            Assert.Equal(10, evt.AvailableSeats);
+            Assert.Contains("10", ex.Message);
             Assert.Equal(10, evt.AvailableSeats);
         }
 

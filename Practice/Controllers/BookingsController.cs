@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Practice.Application.DTO;
 using Practice.Application.Service;
 using Practice.Domain.Models;
+using System.Security.Claims;
 
 namespace Practice.Controllers
 {
@@ -20,11 +21,13 @@ namespace Practice.Controllers
         }
 
         [HttpPost("events/{id:guid}/book")]
-        public async Task<ActionResult<BookingReadDto>> CreateBooking(Guid id, Guid userId)
+        public async Task<ActionResult<BookingReadDto>> CreateBooking(Guid id)
         {
             var evt = await _eventService.GetByIdAsync(id);
             if (evt == null)
                 return NotFound();
+
+            var userId = GetCurrentUserId();
 
             var booking = await _bookingService.CreateBookingAsync(id, userId);
 
@@ -62,13 +65,31 @@ namespace Practice.Controllers
         [HttpDelete("bookings/{id:guid}")]
         public async Task<IActionResult> Cancel(
             Guid id,
-            Guid userId,
-            UserRole role = UserRole.User,
             CancellationToken cancellationToken = default)
         {
-            await _bookingService.CancelBookingAsync(id, userId, role, cancellationToken);
+            await _bookingService.CancelBookingAsync(id, GetCurrentUserId(), GetCurrentUserRole(), cancellationToken);
 
             return NoContent();
+        }
+
+        private Guid GetCurrentUserId()
+        {
+            var value = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            if (!Guid.TryParse(value, out var userId))
+                throw new UnauthorizedAccessException("Invalid user identifier.");
+
+            return userId;
+        }
+
+        private UserRole GetCurrentUserRole()
+        {
+            var value = User.FindFirstValue(ClaimTypes.Role);
+
+            if (!Enum.TryParse<UserRole>(value, out var role))
+                throw new UnauthorizedAccessException("Invalid user role.");
+
+            return role;
         }
     }
 }

@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi;
 using Practice.Application.Extensions;
 using Practice.Infrastructure.Extensions;
 using Practice.Middlewares;
@@ -55,7 +56,31 @@ builder.Services.AddAuthorization();
 
 builder.Services.AddSwaggerGen(c =>
 {
-    c.SwaggerDoc("v" + version, new() { Title = "Event API", Version = "sprint-" + version });
+    c.SwaggerDoc(
+        "v" + version,
+        new OpenApiInfo
+        {
+            Title = "Event API",
+            Version = "sprint-" + version
+        });
+
+    c.AddSecurityDefinition(
+        "Bearer",
+        new OpenApiSecurityScheme
+        {
+            Name = "Authorization",
+            Type = SecuritySchemeType.Http,
+            Scheme = "bearer",
+            BearerFormat = "JWT",
+            In = ParameterLocation.Header,
+            Description = "Введите JWT-токен"
+        });
+
+    c.AddSecurityRequirement(document =>
+        new OpenApiSecurityRequirement
+        {
+            [new OpenApiSecuritySchemeReference("Bearer", document)] = []
+        });
 });
 
 var app = builder.Build();

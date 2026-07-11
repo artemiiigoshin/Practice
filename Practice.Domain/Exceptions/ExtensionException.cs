@@ -18,10 +18,13 @@ public class PastEventBookingException : Exception
 
 public class ActiveBookingLimitExceededException : Exception
 {
-    public ActiveBookingLimitExceededException()
-        : base("Active booking limit exceeded.")
+    public ActiveBookingLimitExceededException(int limit)
+        : base($"Active booking limit of {limit} has been exceeded.")
     {
+        Limit = limit;
     }
+
+    public int Limit { get; }
 }
 
 public class OperationForbiddenException : Exception

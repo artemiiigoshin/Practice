@@ -8,6 +8,8 @@ public class BookingService(
 IBookingRepository bookingRepository,
 IEventRepository eventRepository) : IBookingService
 {
+    private const int MaxActiveBookingsPerUser = 10;
+
     private readonly IBookingRepository _bookingRepository = bookingRepository;
     private readonly IEventRepository _eventRepository = eventRepository;
 
@@ -28,8 +30,8 @@ IEventRepository eventRepository) : IBookingService
 
             var activeBookings = await _bookingRepository.CountActiveByUserIdAsync(userId);
 
-            if (activeBookings >= 10)
-                throw new ActiveBookingLimitExceededException();
+            if (activeBookings >= MaxActiveBookingsPerUser)
+                throw new ActiveBookingLimitExceededException(MaxActiveBookingsPerUser);
 
             var reserved = EventSeatManager.TryReserveSeats(evt);
 
