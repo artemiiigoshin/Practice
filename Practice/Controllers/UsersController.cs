@@ -1,15 +1,17 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Practice.Application.DTO;
 using Practice.Application.Service;
 
 namespace Practice.Controllers;
 
 [ApiController]
-[Route("users")]
+[Route("auth")]
 public sealed class UsersController(IUserService userService) : ControllerBase
 {
     private readonly IUserService _userService = userService;
 
+    [AllowAnonymous]
     [HttpPost("register")]
     public async Task<IActionResult> Register(
         RegisterUserDto dto,
@@ -29,6 +31,7 @@ public sealed class UsersController(IUserService userService) : ControllerBase
             });
     }
 
+    [AllowAnonymous]
     [HttpPost("login")]
     public async Task<ActionResult<TokenDto>> Login(
         LoginUserDto dto,

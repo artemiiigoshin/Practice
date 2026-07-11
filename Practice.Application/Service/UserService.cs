@@ -31,7 +31,7 @@ public sealed class UserService(
             Guid.NewGuid(),
             dto.Login,
             passwordHash,
-            UserRole.User);
+            dto.Role);
 
         _userRepository.Add(user);
 

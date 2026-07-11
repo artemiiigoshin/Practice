@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Practice.Application.DTO;
 using Practice.Application.Service;
 using Practice.Domain.Models;
@@ -6,6 +7,7 @@ using Practice.Domain.Models;
 namespace Practice.Controllers
 {
     [ApiController]
+    [Authorize]
     public class BookingsController : ControllerBase
     {
         private readonly IEventService _eventService;
@@ -57,7 +59,7 @@ namespace Practice.Controllers
             return Ok(dto);
         }
 
-        [HttpPost("bookings/{id:guid}/cancel")]
+        [HttpDelete("bookings/{id:guid}")]
         public async Task<IActionResult> Cancel(
             Guid id,
             Guid userId,

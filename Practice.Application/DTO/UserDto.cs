@@ -1,8 +1,11 @@
-﻿namespace Practice.Application.DTO;
+﻿using Practice.Domain.Models;
+
+namespace Practice.Application.DTO;
 
 public sealed record RegisterUserDto(
     string Login,
-    string Password);
+    string Password,
+    UserRole Role = UserRole.User);
 
 public sealed record LoginUserDto(
     string Login,

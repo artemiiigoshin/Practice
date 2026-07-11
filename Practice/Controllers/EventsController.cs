@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Practice.Application.DTO;
 using Practice.Application.Service;
 using Practice.Domain.Models;
@@ -67,6 +68,7 @@ namespace Practice.Controllers
         }
 
         [HttpPost]
+        [Authorize(Roles = "Admin")]
         public async Task<ActionResult<EventReadDto>> Create(EventRequestDto CreateDto)
         {
             if (!ModelState.IsValid)
@@ -99,6 +101,7 @@ namespace Practice.Controllers
         }
 
         [HttpPut("{id:guid}")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Update(Guid id, EventRequestDto updateDto)
         {
             if (!ModelState.IsValid)
@@ -122,6 +125,7 @@ namespace Practice.Controllers
         }
 
         [HttpDelete("{id:guid}")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Delete(Guid id)
         {
 
