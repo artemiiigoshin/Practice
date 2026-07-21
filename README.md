@@ -17,6 +17,7 @@
 1)Pending
 2)Confirmed
 3)Rejected
+4)Cancelled
 
 Фоновая обработка:
 - новые брони создаются со статусом Pending
@@ -37,12 +38,31 @@ git clone https://github.com/artemiiigoshin/Practice.git
 cd <папка проекта>
 2. Запустите проект: dotnet run
 
-\#Swagger
+# Swagger
 Откройте Swagger UI:
 https://localhost:<порт из launchSettings.json>
 или
 http://localhost:<порт из launchSettings.json>
 Swagger доступе в Development и Stage
+
+## Получение JWT через Swagger
+
+1. Зарегистрируйте пользователя через "POST /auth/register".
+2. Выполните вход через "POST /auth/login".
+3. Скопируйте значение поля "token" из ответа.
+4. Нажмите кнопку "Authorize" в Swagger и вставьте полученный JWT-токен.
+
+## Настройка JWT
+
+В production-среде необходимо использовать длинный криптографически стойкий JWT-секрет. Нельзя хранить реальный секрет в "appsettings.json" и передавать через переменные окружения.
+> или в репозитории.
+
+Параметры JWT находятся в файле `appsettings.json`:
+
+- Secret — секретный ключ;
+- Issuer — издатель;
+- Audience — аудитория;
+- LifetimeMinutes — время жизни токена.
 
 # Архитектура проекта
 
@@ -96,4 +116,11 @@ dotnet ef migrations add MigrationName \
 dotnet ef database update \
     --project Practice.Infrastructure \
     --startup-project Practice.Presentation
+
+## Ролевая модель
+
+В системе используются две роли:
+
+- **User** — может создавать бронирования, просматривать и отменять только свои бронирования.
+- **Admin** — имеет все права пользователя, а также может создавать, изменять и удалять события, просматривать и отменять любые бронирования.
 

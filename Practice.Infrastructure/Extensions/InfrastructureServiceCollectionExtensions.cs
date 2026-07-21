@@ -2,9 +2,11 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Practice.Application.Repositories;
+using Practice.Application.Security;
 using Practice.Infrastructure.BackgroundServices;
 using Practice.Infrastructure.DataContext;
 using Practice.Infrastructure.Repositories;
+using Practice.Infrastructure.Security;
 
 namespace Practice.Infrastructure.Extensions;
 
@@ -19,6 +21,12 @@ public static class InfrastructureServiceCollectionExtensions
 
         services.AddScoped<IEventRepository, EventRepository>();
         services.AddScoped<IBookingRepository, BookingRepository>();
+        services.AddScoped<IUserRepository, UserRepository>();
+
+        services.Configure<JwtOptions>(configuration.GetSection(JwtOptions.SectionName));
+
+        services.AddScoped<IPasswordHasher, PasswordHasher>();
+        services.AddScoped<IJwtTokenGenerator, JwtTokenGenerator>();
 
         services.AddHostedService<BookingProcessingBackgroundService>();
 
